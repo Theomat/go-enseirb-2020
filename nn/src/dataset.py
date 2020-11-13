@@ -8,6 +8,8 @@ import pickle
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 
 def get_raw_data_go():
     ''' Returns the set of samples from the local file or download it if it does not exists'''
@@ -45,11 +47,13 @@ def augmentate_input(X, size):
         for idx in range(size):
             X[rot*size + idx, 0] = np.rot90(X[(rot-1)*size + idx, 0])
             X[rot*size + idx, 1] = np.rot90(X[(rot-1)*size + idx, 1])
+            X[rot*size + idx, 2] = np.rot90(X[(rot-1)*size + idx, 2])
 
     for mirror in range(4, 8):
         for idx in range(size):
             X[mirror*size + idx, 0] = np.flipud(X[(mirror-4) * size + idx, 0])
             X[mirror*size + idx, 1] = np.flipud(X[(mirror-4) * size + idx, 1])
+            X[mirror*size + idx, 2] = np.flipud(X[(mirror-4) * size + idx, 2])
 
     return X
 
@@ -64,7 +68,7 @@ def get_raw_dataset(split=0.8):
     data = get_raw_data_go()
     size = len(data)
 
-    X = np.zeros((8*size, 2, 9, 9))
+    X = np.zeros((8*size, 3, 9, 9))
     y = np.array(8*[d["black_wins"]/d["rollouts"] for d in data])
 
     for idx, table in enumerate(data):
@@ -76,6 +80,8 @@ def get_raw_dataset(split=0.8):
         for wp in table['white_stones']:
             i, j = name_to_coord(wp)
             X[idx, 1, i, j] = 1
+
+        X[idx, 2, :, :] = len(table['list_of_moves']) % 2
 
     X = augmentate_input(X, size)
 
@@ -95,8 +101,8 @@ def get_raw_dataset(split=0.8):
 
 def get_loader(X, y, batch_size=64):
 
-    X = torch.Tensor(X)
-    y = torch.Tensor(y)
+    X = torch.Tensor(X).to(device)
+    y = torch.Tensor(y).to(device)
 
     ds = TensorDataset(X, y)
     loader = DataLoader(ds, batch_size)
@@ -104,10 +110,10 @@ def get_loader(X, y, batch_size=64):
     return loader
 
 
-def get_loaders(batch_size=64):
+def get_loaders(batch_sizes=[64, 8192]):
     ((X_train, y_train), (X_test, y_test)) = get_raw_dataset()
 
-    train_loader = get_loader(X_train, y_train, batch_size=batch_size)
-    test_loader = get_loader(X_test, y_test, batch_size=batch_size)
+    train_loader = get_loader(X_train, y_train, batch_size=batch_sizes[0])
+    test_loader = get_loader(X_test, y_test, batch_size=batch_sizes[1])
 
     return train_loader, test_loader
