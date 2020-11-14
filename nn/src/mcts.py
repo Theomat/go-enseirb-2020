@@ -18,8 +18,11 @@ class Edge:
         self.parent = parent
         self.child = None
         self.action = action
+        self.closed = False
 
     def incertitude(self):
+        if self.closed:
+            return 0
         return self.prior / (1 + self.visits)
 
     def priority(self):
@@ -27,9 +30,8 @@ class Edge:
 
 
 class Node:
-    def __init__(self, state, parent: Edge):
-        self.state = state
-        self.parent: Edge = parent
+    def __init__(self, inbound: Edge):
+        self.inbound: Edge = inbound
         self.children = PriorityQueue()
 
     @property
@@ -38,15 +40,15 @@ class Node:
 
     @property
     def score(self):
-        if self.parent:
-            return -self.parent.priority()
+        if self.inbound:
+            return -self.inbound.priority()
         return .5
 
     def select_move(self, legal_moves):
         edge = self.children.get().item
         while edge.action not in legal_moves:
             edge = self.children.get().item
-        edge.child.parent = None
+        edge.child.inbound = None
         edge.parent = None
         return edge.child, edge.action, edge.action_values, edge.incertitude()
 
@@ -59,18 +61,21 @@ class Node:
         actions.append(selected_edge.action)
         return selected_edge.child.select(actions)
 
-    def expand(self, legal_actions):
-        for action in legal_actions:
-            edge = Edge(action, self, prior=self.score)
-            edge.child = Node(None, edge)
+    def expand(self, legal_actions, priors):
+        for i, action in enumerate(legal_actions):
+            edge = Edge(action, self, prior=priors[i])
+            edge.child = Node(edge)
             self.children.put(PrioritizedItem(item=edge, priority=edge.priority()))
 
-    def update(self, value):
-        edge = self.parent
+    def update(self, value, closed=False):
+        edge = self.inbound
         if not edge:
             return
         edge.action_values = (edge.action_values * edge.visits + value) / (edge.visits + 1)
         edge.visits += 1
+        edge.closed = closed
+        if closed:
+            edge.action_values = value
         node = edge.parent
         if node:
             node.children.put(PrioritizedItem(priority=edge.priority(), item=edge))
@@ -80,7 +85,12 @@ class Node:
         while not self.children.empty():
             edge = self.children.get().item
             if edge.action == action:
+                print("Moved along action:", action)
+                print("Score:", self.score)
                 node = edge.child
-                node.parent = None
+                node.inbound = None
+                edge.parent = None
+                edge.child = None
+                del self.children
                 return node
         return None
