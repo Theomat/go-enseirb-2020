@@ -28,6 +28,8 @@ class myPlayer(PlayerInterface):
         self.net = AlphaGoCnn().to(device)
         self.net.load_state_dict(torch.load("./model.pt", map_location=torch.device(device)))
 
+        self.container = np.zeros((81 + 1, 3, 9, 9), dtype=np.float32)
+
     def getPlayerName(self):
         return "AlphaGo MCTS"
 
@@ -35,10 +37,10 @@ class myPlayer(PlayerInterface):
         return int(self._board.final_go_score()[0].lower() == Goban.Board.player_name(self._mycolor)[0])
 
     def predict_all(self, actions, turn):
-        self.container = np.zeros((len(actions), 3, 9, 9), dtype=np.float32)
+
         self.container[:, 2, :, :] = turn
         BLACK = self._mycolor
-        WHITE = self._board.flip(self._mycolor)
+        WHITE = Goban.Board.flip(self._mycolor)
         to_change = []
         allowed = []
         for i, action in enumerate(actions):
@@ -49,9 +51,9 @@ class myPlayer(PlayerInterface):
                 self.container[i, 0, :, :] = np.reshape(nb == BLACK, [9, 9])
                 self.container[i, 1, :, :] = np.reshape(nb == WHITE, [9, 9])
             elif correct:
-                to_change.append([i, self.is_winner()])
+                to_change.append((i, self.is_winner()))
             self._board.pop()
-        probs = self.net(torch.from_numpy(self.container)).detach().numpy()
+        probs = self.net(torch.from_numpy(self.container[:len(actions)])).detach().numpy()
         for (i, v) in to_change:
             probs[i] = v
         return probs, allowed
@@ -63,35 +65,35 @@ class myPlayer(PlayerInterface):
         print()
         if self.tree is None:
             self.tree = Node(None)
-        turn = 0
         rollouts = 0
         start = time.perf_counter()
         while time.perf_counter() - start <= 5:
+            print("[ITERATION]")
             leaf, actions = self.tree.select()
+            n = len(actions)
+            turn = 0  # 0 => my turn || 1 => opponent turn
             for action in actions:
-                weak_legal = self._board.weak_legal_moves()
-                if action not in weak_legal:
-                    raise Exception("action became invalid")
                 self._board.push(action)
                 turn = 1 - turn
+
             if not self._board.is_game_over():
                 legal = self._board.weak_legal_moves()
                 priors, allowed = self.predict_all(legal, turn)
                 legal = [a for a, t in zip(legal, allowed) if t]
                 priors = [a for a, t in zip(priors, allowed) if t]
-                leaf.expand(legal, priors)
+                leaf.expand(legal, priors, 1 - turn)
                 value = int(self.rollout())
                 rollouts += 1
                 leaf.update(value)
             else:
                 value = self.is_winner()
                 leaf.update(value, closed=True)
-            for action in actions:
+            for i in range(n):
                 self._board.pop()
-        node, move, value, incertitude = self.tree.select_move(self._board.legal_moves())
+        self.tree, move, value, incertitude = self.tree.select_move()
         # New here: allows to consider internal representations of moves
         print("Finished", rollouts, "rollouts !")
-        print("I am playing ", self._board.move_to_str(move), "with score:", value, "~", incertitude)
+        print(f"I am playing {self._board.move_to_str(move)} with score: {value:.4f} ~ {incertitude:.4f}")
         print("My current board :")
         self._board.prettyPrint()
 
@@ -110,9 +112,13 @@ class myPlayer(PlayerInterface):
     def rollout(self):
         n = 0
         while not self._board.is_game_over():
-            moves = self._board.legal_moves()
-            move = choice(moves)
-            self._board.push(move)
+            moves = self._board.weak_legal_moves()
+            success = False
+            while not success:
+                move = choice(moves)
+                success = self._board.push(move)
+                if not success:
+                    self._board.pop()
             n += 1
         result = self.is_winner()
         for i in range(n):
