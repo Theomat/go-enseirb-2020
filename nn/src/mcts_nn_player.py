@@ -46,7 +46,7 @@ class myPlayer(PlayerInterface):
         for i, action in enumerate(actions):
             correct = self._board.push(action)
             allowed.append(correct)
-            if not self._board.is_game_over and correct:
+            if not self._board.is_game_over() and correct:
                 nb = self._board._board
                 self.container[i, 0, :, :] = np.reshape(nb == BLACK, [9, 9])
                 self.container[i, 1, :, :] = np.reshape(nb == WHITE, [9, 9])
@@ -68,7 +68,6 @@ class myPlayer(PlayerInterface):
         rollouts = 0
         start = time.perf_counter()
         while time.perf_counter() - start <= 5:
-            print("[ITERATION]")
             leaf, actions = self.tree.select()
             n = len(actions)
             turn = 0  # 0 => my turn || 1 => opponent turn
@@ -82,9 +81,9 @@ class myPlayer(PlayerInterface):
                 legal = [a for a, t in zip(legal, allowed) if t]
                 priors = [a for a, t in zip(priors, allowed) if t]
                 leaf.expand(legal, priors, 1 - turn)
-                value = int(self.rollout())
-                rollouts += 1
-                leaf.update(value)
+                for p in priors:
+                    leaf.update(p)
+                rollouts += len(legal)
             else:
                 value = self.is_winner()
                 leaf.update(value, closed=True)
@@ -92,7 +91,7 @@ class myPlayer(PlayerInterface):
                 self._board.pop()
         self.tree, move, value, incertitude = self.tree.select_move()
         # New here: allows to consider internal representations of moves
-        print("Finished", rollouts, "rollouts !")
+        print("Finished", rollouts, "priors !")
         print(f"I am playing {self._board.move_to_str(move)} with score: {value:.4f} ~ {incertitude:.4f}")
         print("My current board :")
         self._board.prettyPrint()

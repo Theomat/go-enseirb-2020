@@ -60,7 +60,7 @@ class Node:
         if actions is None:
             actions = []
         selected_edge = self.children.get().item
-        print("\tSelected action:", selected_edge.action, "value:", selected_edge.priority())
+        # print("\tSelected action:", selected_edge.action, "value:", selected_edge.priority())
         actions.append(selected_edge.action)
         return selected_edge.child.select(actions)
 
