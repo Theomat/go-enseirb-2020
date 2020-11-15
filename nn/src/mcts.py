@@ -22,14 +22,16 @@ class Edge:
 
 
 DEBUG = True
+EPS = 10**-3
 
 
 class Node:
     def __init__(self, inbound: Edge):
         self.inbound: Edge = inbound
         self.children = []
-        self._best = None
-        self._best_prio = 999
+        self._best_explore = None
+        self._best_exploit = None
+        self._best_prio = None
 
     @property
     def is_leaf(self):
@@ -41,19 +43,34 @@ class Node:
             return self.inbound.action_values
         return -1
 
-    def __get_best(self):
-        if self._best:
-            return self._best
-        self._best_prio = 9999
-        for edge in self.children:
-            prio = edge.priority()
-            if prio < self._best_prio:
-                self._best = edge
-                self._best_prio = prio
-        return self._best
+    def __get_best(self, exploration=True):
+        if not self._best_prio:
+            self._best_prio = 9999
+            self._best_exploit = None
+            self._best_explore = None
+            for edge in self.children:
+                prio = edge.priority()
+                if edge.prior >= 1 and self._best_exploit and self._best_explore and \
+                   (edge.visits == 0 or abs(prio - self._best_prio) <= EPS):
+                    if self._best_explore.incertitude() < edge.incertitude():
+                        self._best_explore = edge
+                    elif self._best_exploit.incertitude() > edge.incertitude():
+                        self._best_exploit = edge
+                elif prio < self._best_prio:
+                    self._best_exploit = edge
+                    self._best_explore = edge
+                    self._best_prio = prio
+                elif prio == self._best_prio:
+                    if self._best_explore.incertitude() < edge.incertitude():
+                        self._best_explore = edge
+                    elif self._best_exploit.incertitude() > edge.incertitude():
+                        self._best_exploit = edge
+        if exploration:
+            return self._best_explore
+        return self._best_exploit
 
     def select_move(self):
-        best_edge = self.__get_best()
+        best_edge = self.__get_best(False)
         if DEBUG:
             for edge in self.children:
                 print(f"\t{edge.action} has value: {edge.action_values:.4f} ~ {edge.incertitude():.4f}",
@@ -92,7 +109,7 @@ class Node:
         node = edge.parent
         if node:
             node.update(value)
-            node._best = None
+            node._best_prio = None
 
     def move_to(self, action):
         for edge in self.children:

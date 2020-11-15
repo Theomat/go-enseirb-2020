@@ -21,7 +21,7 @@ class myPlayer(PlayerInterface):
         self._mycolor = None
         self.tree = None
 
-        device = "cpu" #"cuda:0" if torch.cuda.is_available() else "cpu"
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         print(f"Inference on {'cpu' if device == 'cpu' else torch.cuda.get_device_name(0)}")
 
@@ -67,7 +67,7 @@ class myPlayer(PlayerInterface):
             self.tree = Node(None)
         rollouts = 0
         start = time.perf_counter()
-        while time.perf_counter() - start <= 5:
+        while time.perf_counter() - start <= 3:
             leaf, actions = self.tree.select()
             n = len(actions)
             turn = 0  # 0 => my turn || 1 => opponent turn
