@@ -1,15 +1,3 @@
-from queue import PriorityQueue
-
-from dataclasses import dataclass, field
-from typing import Any
-
-
-@dataclass(order=True)
-class PrioritizedItem:
-    priority: float
-    item: Any = field(compare=False)
-
-
 class Edge:
     def __init__(self, action, parent, turn, prior: float = 0):
         self.visits = 0
@@ -28,17 +16,24 @@ class Edge:
         return self.prior / (1 + self.visits)
 
     def priority(self):
+        if self.closed:
+            return -self.coeff * 10
         return self.coeff * (self.action_values + self.incertitude())
+
+
+DEBUG = True
 
 
 class Node:
     def __init__(self, inbound: Edge):
         self.inbound: Edge = inbound
-        self.children = PriorityQueue()
+        self.children = []
+        self._best = None
+        self._best_prio = 999
 
     @property
     def is_leaf(self):
-        return self.children.empty()
+        return len(self.children) == 0
 
     @property
     def score(self):
@@ -46,29 +41,44 @@ class Node:
             return self.inbound.action_values
         return -1
 
+    def __get_best(self):
+        if self._best:
+            return self._best
+        self._best_prio = 9999
+        for edge in self.children:
+            prio = edge.priority()
+            if prio < self._best_prio:
+                self._best = edge
+                self._best_prio = prio
+        return self._best
+
     def select_move(self):
-        edge = self.children.get().item
-        edge.child.inbound = None
-        edge.parent = None
+        best_edge = self.__get_best()
+        if DEBUG:
+            for edge in self.children:
+                print(f"\t{edge.action} has value: {edge.action_values:.4f} ~ {edge.incertitude():.4f}",
+                      f"(prior={edge.prior:.4f}, visits={edge.visits} closed={edge.closed})")
+
+        best_edge.child.inbound = None
+        best_edge.parent = None
         del self.children
         del self.inbound
-        return edge.child, edge.action, edge.action_values, edge.incertitude()
+        return best_edge.child, best_edge.action, best_edge.action_values, best_edge.incertitude()
 
     def select(self, actions=None):
         if self.is_leaf:
             return self, actions or []
         if actions is None:
             actions = []
-        selected_edge = self.children.get().item
-        # print("\tSelected action:", selected_edge.action, "value:", selected_edge.priority())
-        actions.append(selected_edge.action)
-        return selected_edge.child.select(actions)
+        best_edge = self.__get_best()
+        actions.append(best_edge.action)
+        return best_edge.child.select(actions)
 
     def expand(self, legal_actions, priors, turn):
         for i, action in enumerate(legal_actions):
             edge = Edge(action, self, turn=turn, prior=priors[i])
             edge.child = Node(edge)
-            self.children.put(PrioritizedItem(item=edge, priority=edge.priority()))
+            self.children.append(edge)
 
     def update(self, value, closed=False):
         edge = self.inbound
@@ -81,17 +91,18 @@ class Node:
             edge.action_values = value
         node = edge.parent
         if node:
-            node.children.put(PrioritizedItem(priority=edge.priority(), item=edge))
             node.update(value)
+            node._best = None
 
     def move_to(self, action):
-        while not self.children.empty():
-            edge = self.children.get().item
+        for edge in self.children:
             if edge.action == action:
-                print("Moved along action:", action)
                 node = edge.child
-                print("Score:", node.inbound.action_values, "~", node.inbound.incertitude(),
-                      "(prior=", node.inbound.prior, "visits=", node.inbound.visits, ")")
+                inbound = node.inbound
+                if DEBUG:
+                    print("Moved along action:", action)
+                    print(f"Score:{inbound.action_values:.4f} ~ {inbound.incertitude():.4f}",
+                          f"(prior={inbound.prior:.4f}, visits={inbound.visits})")
                 node.inbound = None
                 edge.parent = None
                 edge.child = None
