@@ -50,13 +50,7 @@ class Node:
             self._best_explore = None
             for edge in self.children:
                 prio = edge.priority()
-                if edge.prior >= 1 and self._best_exploit and self._best_explore and \
-                   (edge.visits == 0 or abs(prio - self._best_prio) <= EPS):
-                    if self._best_explore.incertitude() < edge.incertitude():
-                        self._best_explore = edge
-                    elif self._best_exploit.incertitude() > edge.incertitude():
-                        self._best_exploit = edge
-                elif prio < self._best_prio:
+                if prio < self._best_prio:
                     self._best_exploit = edge
                     self._best_explore = edge
                     self._best_prio = prio
