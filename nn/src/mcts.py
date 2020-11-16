@@ -23,7 +23,7 @@ class MCTS:
         self.tensor_size: int = 2 * self.len_history + 1
 
     def get_state(self):
-        return self._vector, self.board.export_save()
+        return self._vector, self.export_save()
 
     def is_closed(self) -> bool:
         return self.board.is_game_over()
@@ -33,7 +33,7 @@ class MCTS:
         State is a torch tensor, like _vector.
         """
         self._vector, save = state
-        self.board.load_save(save)
+        self.load_save(save)
 
     def explore_legal_moves(self) -> Tuple[List[int], List]:
         actions: List[int] = []
@@ -111,3 +111,25 @@ class MCTS:
         for triplet in training_data:
             triplet[2] *= reward
         return training_data
+
+    def export_save(self):
+        self.board._pushBoard()
+        save = self.board._trailMoves.pop()
+        save.append(self.board._historyMoveNames.copy())
+        return save
+
+    def load_save(self, save: List):
+        self.board._historyMoveNames = save[-1].copy()
+        self.board._currentHash = save[-2]
+        self.board._empties = save[-3].copy()
+        self.board._stringSizes = save[-4].copy()
+        self.board._stringLiberties = save[-5].copy()
+        self.board._stringUnionFind = save[-6].copy()
+        self.board._lastPlayerHasPassed = save[-7]
+        self.board._gameOver = save[-8]
+        self.board._board = save[-9].copy()
+        self.board._nextPlayer = save[-10]
+        self.board._capturedBLACK = save[-11]
+        self.board._capturedWHITE = save[-12]
+        self.board._nbBLACK = save[-13]
+        self.board._nbWHITE = save[-14]
