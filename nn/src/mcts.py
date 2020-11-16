@@ -90,9 +90,9 @@ class MCTS:
                 priors, value = self.evaluate(node.state[0])
                 node.expand(actions, states, priors, value)
 
-            tuple = root.play(temperature)
-            edge: Edge = tuple[0]
-            pi: np.ndarray = tuple[1]
+            play_tuple = root.play(temperature)
+            edge: Edge = play_tuple[0]
+            pi: np.ndarray = play_tuple[1]
             self.set_game(edge.child.state)
             # Save training data
             training_data.append([root.state[0], pi, coeff])
