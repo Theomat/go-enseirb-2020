@@ -1,14 +1,25 @@
 from mcts import MCTS
 from model import AlphaGoZero
 
+import time
+
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
 
 class Trainer:
 
     def __init__(self, optimizer, replay_buffer):
-        self.model = AlphaGoZero()
-        self.best = AlphaGoZero()
+        # autodetect best device
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        print(f"Training on {'cpu' if self.device == 'cpu' else torch.cuda.get_device_name(0)}")
+
+        self.model = AlphaGoZero().to(self.device)
+        self.best = AlphaGoZero().to(self.device)
         self.replay_buffer = replay_buffer
         self.optimizer = optimizer
+
+        self.writer = SummaryWriter()
 
         # the number of training steps between each checkpoint
         self.checkpoint: int = 1000
@@ -36,7 +47,9 @@ class Trainer:
         loss.backward()
         self.optimizer.step()
 
-        # TODO: Also add somewhere the loss or print it so we have an update
+
+        # TODO: Also add the loss or print it so we have an update
+        writer.add_scalars('loss', {'train_loss': running_loss / 100, 'test_los': test_loss}, n_iter)
 
     def train(self, training_steps: int):
         for _ in range(training_steps):
@@ -44,5 +57,6 @@ class Trainer:
 
     def on_checkpoint(self):
         # TODO: keep the best NN, should we really do that ? I'm a bit lazy :P
-        # TODO: also save the model
-        pass
+
+        # Save the best model
+        torch.save(self.best.state_dict(), f'alphago_zero_model_{int(time.time())}.pt')
