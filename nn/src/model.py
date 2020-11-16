@@ -102,7 +102,7 @@ class AlphaGoZero(nn.Module):
         super(AlphaGoZero, self).__init__()
 
         self.convolutional_block = ConvolutionalBlock(features=features)
-        self.residual_block = ResidualBlock(9)
+        self.residual_block = ResidualBlock(blocks=9)
         self.policy_head = PolicyNN()
         self.value_head = ValueNN()
 
