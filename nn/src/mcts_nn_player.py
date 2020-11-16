@@ -21,12 +21,12 @@ class myPlayer(PlayerInterface):
         self._mycolor = None
         self.tree = None
 
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-        print(f"Inference on {'cpu' if device == 'cpu' else torch.cuda.get_device_name(0)}")
+        print(f"Inference on {'cpu' if self.device == 'cpu' else torch.cuda.get_device_name(0)}")
 
-        self.net = AlphaGoCnn().to(device)
-        self.net.load_state_dict(torch.load("./model.pt", map_location=torch.device(device)))
+        self.net = AlphaGoCnn().to(self.device)
+        self.net.load_state_dict(torch.load("./model.pt", map_location=torch.device(self.device)))
 
         self.container = np.zeros((81 + 1, 3, 9, 9), dtype=np.float32)
 
@@ -53,7 +53,7 @@ class myPlayer(PlayerInterface):
             elif correct:
                 to_change.append((i, self.is_winner()))
             self._board.pop()
-        probs = self.net(torch.from_numpy(self.container[:len(actions)])).detach().numpy()
+        probs = self.net(torch.from_numpy(self.container[:len(actions)]).to(self.device)).detach().cpu().numpy()
         for (i, v) in to_change:
             probs[i] = v
         return probs, allowed
@@ -102,7 +102,7 @@ class myPlayer(PlayerInterface):
 
     def playOpponentMove(self, move):
         print("Opponent played ", move, "i.e. ", move)  # New here
-        # the board needs an internal represetation to push the move.  Not a string
+        # the board needs an internal represetation to push the move.  Not a string
         flat = Goban.Board.name_to_flat(move)
         self._board.push(flat)
         if self.tree:
