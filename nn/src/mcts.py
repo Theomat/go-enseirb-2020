@@ -1,6 +1,6 @@
 from node import Node, Edge
 
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import numpy as np
 import torch
@@ -21,6 +21,9 @@ class MCTS:
         self.len_history: int = 7
 
         self.tensor_size: int = 2 * self.len_history + 1
+
+        self.board = Goban.Board()
+        self.torch_board = torch.from_numpy(self.board._board)
 
     def get_state(self):
         return self._vector, self.export_save()
@@ -48,11 +51,11 @@ class MCTS:
             # Rollout the history
             state[2:self.tensor_size - 1, :, :] = self._vector[:self.tensor_size - 3, :, :]
             # Add board features
-            state[0, :, :] = np.reshape(self.board == 0, (9, 9))
-            state[1, :, :] = np.reshape(self.board == 1, (9, 9))
+            state[0, :, :] = torch.reshape(self.torch_board == 0, (9, 9))
+            state[1, :, :] = torch.reshape(self.torch_board == 1, (9, 9))
             # Swap turn
             state[self.tensor_size - 1] = 1 - self._vector[self.tensor_size - 1]
-            states.append((state, self.board.export_save()))
+            states.append((state, self.export_save()))
             self.board.pop()
         return actions, states
 
@@ -60,6 +63,8 @@ class MCTS:
         """
         Evaluate the specified state, which is a torch tensor.
         """
+        # TODO: fixing this: went to get lunch
+        state = state.view(1, *state.shape)
         output: np.ndarray = self.model(state).detach().cpu().numpy()
         # TODO: adapt to torch because I belive the output isn't shaped like that
         return output[0], output[1:]
@@ -71,7 +76,7 @@ class MCTS:
         self.board: Goban.Board = Goban.Board()
         self._vector = torch.zeros((self.tensor_size, 9, 9), dtype=int)
 
-    def self_play(self) -> List[List[np.ndarray, np.ndarray, int]]:
+    def self_play(self) -> List[List[Any]]:
         """
         Does one game of selfplay.
         """

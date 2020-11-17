@@ -86,13 +86,17 @@ class Node:
         return self.children[index], array
 
     def add_dirichlet_noise(self, alpha: float = .03, epsilon: float = .25):
+
+        if self.children is None or self.children.shape[0] == 0:
+            return
+
         noise = np.random.dirichlet(alpha, self.children.shape[0])
         for i in range(self.children.shape[0]):
             child = self.children[i]
             child.prior = (1 - epsilon) * child.prior + epsilon * noise[i]
 
     def should_resign(self, v_resign: float) -> bool:
-        if self.inbound.current_action_value < v_resign:
+        if self.inbound and self.inbound.current_action_value < v_resign:
             if np.max(vget_action_values(self.children)) < v_resign:
                 return True
         return False
