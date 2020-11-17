@@ -92,9 +92,12 @@ class MCTS:
             for _ in range(self.simulations_per_play):
                 node: Node = root.select()  # TODO: choose parameter cpuct
                 self.set_game(node.state)
-                actions, states = self.explore_legal_moves()
-                priors, value = self.evaluate(node.state[0])
-                node.expand(actions, states, priors, value)
+                if self.is_closed():
+                    node.backup(node.inbound.current_action_value)
+                else:
+                    actions, states = self.explore_legal_moves()
+                    priors, value = self.evaluate(node.state[0])
+                    node.expand(actions, states, priors, value)
             self.logger.log(9, "Simulations completed")
             play_tuple = root.play(temperature)
             edge: Edge = play_tuple[0]
