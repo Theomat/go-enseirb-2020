@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 
-vget_visits = np.vectorize(lambda x: x.visits)
+vget_visits = np.vectorize(lambda x: x.visits, otypes=[np.float])
 vget_base_incertitudes = np.vectorize(lambda x: x.base_incertitude())
 vget_action_values = np.vectorize(lambda x: x.current_action_value)
 
@@ -43,7 +43,7 @@ class Node:
 
     @property
     def is_leaf(self) -> bool:
-        return not self.children
+        return self.children is None
 
     def select(self, cpuct: float = 1.0):
         """
@@ -62,7 +62,7 @@ class Node:
         index = 0
         for action, state in zip(actions, states):
             edge = Edge(action, parent=self, prior=priors[action])
-            edge.child = Node(edge)
+            edge.child = Node(state, edge)
             self.children[index] = edge
             index += 1
         self.backup(value)
@@ -72,10 +72,12 @@ class Node:
             self.inbound.backup(value)
 
     def play(self, temperature: float = 1.0) -> Tuple[Edge, np.ndarray]:
+
         probabilities = vget_visits(self.children)
         np.power(probabilities, 1 / temperature, out=probabilities)
         probabilities /= np.sum(probabilities)
-        index = np.random.choice(np.randrange(probabilities.shape[0]), size=1, replace=False, p=probabilities)
+
+        index = np.random.choice(np.arange(probabilities.shape[0]), size=1, replace=False, p=probabilities)
         array = np.zeros(82, dtype=np.float)
         for i in range(self.children.shape[0]):
             child = self.children[i]
@@ -83,7 +85,8 @@ class Node:
                 array[81] = probabilities[i]
             else:
                 array[child.action] = probabilities[i]
-        return self.children[index], array
+
+        return self.children[index][0], array
 
     def add_dirichlet_noise(self, alpha: float = .03, epsilon: float = .25):
 

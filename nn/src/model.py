@@ -30,7 +30,7 @@ class AlphaGoCnn(nn.Module):
 
 
 class ConvolutionalBlock(nn.Module):
-    def __init__(self, features=3):
+    def __init__(self, features=15):
         super(ConvolutionalBlock, self).__init__()
         self.conv = nn.Conv2d(features, 256, 3, padding=1)
         self.bn = nn.BatchNorm2d(256)
@@ -94,11 +94,11 @@ class ValueNN(nn.Module):
         x = F.relu(self.bn(self.conv(x)))
         x = x.view(-1, 2 * 9 * 9)
         x = F.relu(self.fc1(x))
-        return F.tanh(self.fc2(x))
+        return torch.tanh(self.fc2(x))
 
 
 class AlphaGoZero(nn.Module):
-    def __init__(self, features=3, residual=9):
+    def __init__(self, features=15, residual=9):
         super(AlphaGoZero, self).__init__()
 
         self.convolutional_block = ConvolutionalBlock(features=features)

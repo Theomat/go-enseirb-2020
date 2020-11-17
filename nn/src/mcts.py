@@ -63,11 +63,11 @@ class MCTS:
         """
         Evaluate the specified state, which is a torch tensor.
         """
-        # TODO: fixing this: went to get lunch
-        state = state.view(1, *state.shape)
-        output: np.ndarray = self.model(state).detach().cpu().numpy()
-        # TODO: adapt to torch because I belive the output isn't shaped like that
-        return output[0], output[1:]
+        state = state.view(1, *state.shape).float()
+
+        p, v = self.model(state)
+
+        return p.detach().cpu().numpy()[0], v.detach().cpu().numpy()[0][0]
 
     def reset(self):
         """
