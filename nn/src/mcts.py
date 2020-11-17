@@ -102,8 +102,10 @@ class MCTS:
             # Save training data
             training_data.append([root.state[0], pi, coeff])
             # Change root and free it
-            root.free_except(edge.child)
+            #root.free_except(edge.child)
             root = edge.child
+
+            print(played_turns)
 
             coeff *= -1
             played_turns += 1

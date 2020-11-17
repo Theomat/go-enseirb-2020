@@ -93,7 +93,7 @@ class Node:
         if self.children is None or self.children.shape[0] == 0:
             return
 
-        noise = np.random.dirichlet(alpha, self.children.shape[0])
+        noise = np.random.dirichlet([alpha] * self.children.shape[0])
         for i in range(self.children.shape[0]):
             child = self.children[i]
             child.prior = (1 - epsilon) * child.prior + epsilon * noise[i]
@@ -109,7 +109,6 @@ class Node:
         Delete everythign to be GC except the specified Node **keep**.
         """
         del self.state
-        del self.children
         if self.inbound:
             self.inbound.free()
         for i in range(self.children.shape[0]):
@@ -118,3 +117,4 @@ class Node:
                 child.free()
             else:
                 child.parent = None
+        del self.children
