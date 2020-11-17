@@ -14,8 +14,8 @@ class MCTS:
         self.model = model
         # Max Game duration
         self.T: int = 200
-        self.v_resign: float = -99
-        self.simulations_per_play: int = 1600
+        self.v_resign: float = -0.99
+        self.simulations_per_play: int = 100
         # Number of moves after which temperature is set to something close to 0
         self.moves_after_low_temperature: int = 7  # defined empirically/proportionally
         # Number of boards to keep for history
@@ -76,6 +76,14 @@ class MCTS:
         self.board: Goban.Board = Goban.Board()
         self._vector = torch.zeros((self.tensor_size, 9, 9), dtype=int)
 
+    def get_winner(self) -> int:
+        # TODO: Replace by Taylor-Tromp score
+        (black, white) = self.board.compute_score()
+        if black > white:
+            return 0
+        else:
+            return 1
+
     def self_play(self) -> List[List[Any]]:
         """
         Does one game of selfplay.
@@ -86,7 +94,12 @@ class MCTS:
         root: Node = Node(self.get_state(), None)
         played_turns: int = 0
         temperature: float = 1.0
-        while played_turns < self.T and not self.is_closed() and not root.should_resign(self.v_resign):
+        resigned: bool = False
+        while played_turns < self.T and not self.is_closed():
+            if root.should_resign(self.v_resign):
+                self.logger.debug(f"Resigned at turn {played_turns}")
+                resigned = True
+                break
             self.logger.log(7, f"Turn {played_turns} start")
             root.add_dirichlet_noise()
             for _ in range(self.simulations_per_play):
@@ -120,7 +133,11 @@ class MCTS:
         self.logger.log(8, "Game is finished")
         # Free the tree
         root.free_except(None)
-        reward: int = 1 if self.get_winner() == 0 else -1
+        if resigned:
+            # Last player had coeff and he resigned
+            reward: int = -coeff
+        else:
+            reward: int = 1 if self.get_winner() == 0 else -1
         # backprop reward
         for triplet in training_data:
             triplet[2] *= reward
