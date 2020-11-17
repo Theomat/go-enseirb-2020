@@ -72,18 +72,29 @@ class Node:
             self.inbound.backup(value)
 
     def play(self, temperature: float = 1.0) -> Tuple[Edge, np.ndarray]:
-
-        probabilities = vget_visits(self.children)
-        np.power(probabilities, 1 / temperature, out=probabilities)
-        probabilities /= np.sum(probabilities)
-
-        index: int = np.random.choice(np.arange(probabilities.shape[0]), p=probabilities)
         array: np.ndarray = np.zeros(82, dtype=np.float)
-        for i in range(self.children.shape[0]):
-            child: Edge = self.children[i]
-            array[child.action] = probabilities[i]
+        if temperature <= 0:
+            # If temperature is 0 then choose the node with the most visits
+            # having a temperature of 10**(-5) creates overflow very easily
+            visits: np.ndarray = vget_visits(self.children)
+            chosen: np.ndarray = np.where(visits == np.max(visits))[0]
+            for i in range(chosen.shape[0]):
+                index: int = chosen[i]
+                child: Edge = self.children[index]
+                array[child.action] = 1 / chosen.shape[0]
+            chosen_child_index: int = np.random.choice(chosen)
+            return self.children[chosen_child_index], array
+        else:
+            probabilities: np.ndarray = vget_visits(self.children)
+            np.power(probabilities, 1 / temperature, out=probabilities)
+            probabilities /= np.sum(probabilities)
 
-        return self.children[index], array
+            index: int = np.random.choice(np.arange(probabilities.shape[0]), p=probabilities)
+            for i in range(self.children.shape[0]):
+                child: Edge = self.children[i]
+                array[child.action] = probabilities[i]
+
+            return self.children[index], array
 
     def add_dirichlet_noise(self, alpha: float = .03, epsilon: float = .25):
         if self.is_leaf:

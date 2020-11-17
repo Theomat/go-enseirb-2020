@@ -87,7 +87,7 @@ class MCTS:
         played_turns: int = 0
         temperature: float = 1.0
         while played_turns < self.T and not self.is_closed() and not root.should_resign(self.v_resign):
-            self.logger.log(9, f"Turn {played_turns} start")
+            self.logger.log(7, f"Turn {played_turns} start")
             root.add_dirichlet_noise()
             for _ in range(self.simulations_per_play):
                 node: Node = root.select()  # TODO: choose parameter cpuct
@@ -98,7 +98,7 @@ class MCTS:
                     actions, states = self.explore_legal_moves()
                     priors, value = self.evaluate(node.state[0])
                     node.expand(actions, states, priors, value)
-            self.logger.log(9, "Simulations completed")
+            self.logger.log(5, "Simulations completed")
             play_tuple = root.play(temperature)
             edge: Edge = play_tuple[0]
             pi: np.ndarray = play_tuple[1]
@@ -109,15 +109,15 @@ class MCTS:
             root.free_except(edge.child)
 
             root: Node = edge.child
-            self.logger.debug(f"Turn {played_turns} terminated")
+            self.logger.log(7, f"Turn {played_turns} terminated")
 
             coeff *= -1
             played_turns += 1
 
             if played_turns == self.moves_after_low_temperature:
-                temperature: float = 10**-5  # defined empirically
-                self.logger.debug("Temperature is now low")
-        self.logger.debug("Game is finished")
+                temperature: float = 0
+                self.logger.log(7, "Temperature is now low")
+        self.logger.log(8, "Game is finished")
         # Free the tree
         root.free_except(None)
         reward: int = 1 if self.get_winner() == 0 else -1
