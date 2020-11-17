@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 
@@ -9,14 +9,14 @@ vget_action_values = np.vectorize(lambda x: x.current_action_value)
 
 class Edge:
     def __init__(self, action: int, parent, prior: float = 0, child=None):
-        self.visits = 0
-        self.prior = prior
-        self.sum_action_values = 0
-        self.current_action_value = 0
+        self.visits: int = 0
+        self.prior: float = prior
+        self.sum_action_values: float = 0
+        self.current_action_value: float = 0
 
         self.parent = parent
         self.child = child
-        self.action = action
+        self.action: int = action
 
     def backup(self, value: float):
         self.sum_action_values += value
@@ -30,8 +30,6 @@ class Edge:
 
     def free(self):
         del self.parent
-        if self.child:
-            self.child.free_except(None)
         del self.child
 
 
@@ -39,7 +37,7 @@ class Node:
     def __init__(self, state, inbound: Edge):
         self.state = state
         self.inbound: Edge = inbound
-        self.children: np.ndarray = None
+        self.children: Optional[np.ndarray] = None
 
     @property
     def is_leaf(self) -> bool:
@@ -51,17 +49,19 @@ class Node:
         """
         if self.is_leaf:
             return self
-        total_visits = np.sqrt(np.sum(vget_visits(self.children)))
-        values = vget_base_incertitudes(self.children) * total_visits * cpuct
+        total_visits: float = np.sqrt(np.sum(vget_visits(self.children)))
+        values: np.ndarray = vget_base_incertitudes(self.children) * total_visits * cpuct
         values += vget_action_values(self.children)
-        index = np.argmax(values)
-        return self.children[index].child.select(cpuct)
+        index: int = np.argmax(values)
+        selected_edge: Edge = self.children[index]
+        return selected_edge.child.select(cpuct)
 
     def expand(self, actions, states, priors, value):
-        self.children = np.zeros(len(actions), dtype=Edge)
-        index = 0
+        self.children: np.ndarray = np.zeros(len(actions), dtype=Edge)
+        index: int = 0
         for action, state in zip(actions, states):
-            edge = Edge(action, parent=self, prior=priors[action])
+            # Little trick: PASS is -1 which maps to index 81, nice !
+            edge: Edge = Edge(action, parent=self, prior=priors[action])
             edge.child = Node(state, edge)
             self.children[index] = edge
             index += 1
@@ -77,25 +77,21 @@ class Node:
         np.power(probabilities, 1 / temperature, out=probabilities)
         probabilities /= np.sum(probabilities)
 
-        index = np.random.choice(np.arange(probabilities.shape[0]), size=1, replace=False, p=probabilities)
-        array = np.zeros(82, dtype=np.float)
+        index: int = np.random.choice(np.arange(probabilities.shape[0]), p=probabilities)
+        array: np.ndarray = np.zeros(82, dtype=np.float)
         for i in range(self.children.shape[0]):
-            child = self.children[i]
-            if child.action == -1:
-                array[81] = probabilities[i]
-            else:
-                array[child.action] = probabilities[i]
+            child: Edge = self.children[i]
+            array[child.action] = probabilities[i]
 
-        return self.children[index][0], array
+        return self.children[index], array
 
     def add_dirichlet_noise(self, alpha: float = .03, epsilon: float = .25):
-
-        if self.children is None or self.children.shape[0] == 0:
+        if self.is_leaf:
             return
 
-        noise = np.random.dirichlet([alpha] * self.children.shape[0])
+        noise: np.ndarray = np.random.dirichlet([alpha] * self.children.shape[0])
         for i in range(self.children.shape[0]):
-            child = self.children[i]
+            child: Edge = self.children[i]
             child.prior = (1 - epsilon) * child.prior + epsilon * noise[i]
 
     def should_resign(self, v_resign: float) -> bool:
@@ -106,15 +102,17 @@ class Node:
 
     def free_except(self, keep):
         """
-        Delete everythign to be GC except the specified Node **keep**.
+        Delete everything to be GC except the specified Node **keep**.
         """
-        del self.state
         if self.inbound:
             self.inbound.free()
-        for i in range(self.children.shape[0]):
-            child = self.children[i]
-            if child.child != keep:
-                child.free()
-            else:
-                child.parent = None
+        if not self.is_leaf:
+            for i in range(self.children.shape[0]):
+                child = self.children[i]
+                if child.child != keep:
+                    child.child.free_except(None)
+                else:
+                    child.parent = None
+        del self.state
+        del self.inbound
         del self.children
