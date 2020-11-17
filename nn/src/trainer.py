@@ -1,5 +1,6 @@
 from mcts import MCTS
 from model import AlphaGoZero
+from loss import alpha_go_zero_loss
 
 import time
 
@@ -38,25 +39,35 @@ class Trainer:
             self.on_checkpoint()
 
         samples = self.replay_buffer.sample(self.sample_size)
-        inputs = [s for (s, _, _) in samples]
-        outputs = [(pi, r) for (_, pi, r) in samples]
+        inputs = torch.tensor([s for (s, _, _) in samples])
+
+        # TODO: we need a faster way to do it (with pytorch when using tensors), this is just the dumb (correct) way
+        y_target = [(pi, r) for (_, pi, r) in samples]
+        pi, z = list(zip(*y_target))
+
+        pi = torch.tensor(pi)
+        z = torch.tensor(z)
+
         self.optimizer.zero_grad()
+
         # TODO: do loss, the following doesn't work I know XD
-        y_pred = self.model(inputs)
+        p, v = self.model(inputs)
+
+        # where p and v are the predicted values and pi and z the target values
+        loss = alpha_go_zero_loss(p, v, pi, z)
 
         loss.backward()
         self.optimizer.step()
 
-
         # TODO: Also add the loss or print it so we have an update
-        writer.add_scalars('loss', {'train_loss': running_loss / 100, 'test_los': test_loss}, n_iter)
+        # writer.add_scalars('loss', {'train_loss': running_loss / 100, 'test_los': test_loss}, n_iter)
 
     def train(self, training_steps: int):
         for _ in range(training_steps):
             self._training_step()
 
     def on_checkpoint(self):
-        # TODO: keep the best NN, should we really do that ? I'm a bit lazy :P
+        # TODO: keep the best NN, should we really do that ? I'm a bit lazy :P (just keep the last one, fuck it XD)
 
         # Save the best model
         torch.save(self.best.state_dict(), f'alphago_zero_model_{int(time.time())}.pt')
