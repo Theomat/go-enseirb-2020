@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 import numpy as np
 
 vget_visits = np.vectorize(lambda x: x.visits, otypes=[np.float])
-vget_base_incertitudes = np.vectorize(lambda x: x.base_incertitude())
+vget_base_incertitudes = np.vectorize(lambda x: x.incertitude)
 vget_action_values = np.vectorize(lambda x: x.current_action_value)
 
 
@@ -13,6 +13,7 @@ class Edge:
         self.prior: float = prior
         self.sum_action_values: float = 0
         self.current_action_value: float = 0
+        self.incertitude: float = prior
 
         self.parent = parent
         self.child = child
@@ -22,11 +23,9 @@ class Edge:
         self.sum_action_values += value
         self.visits += 1
         self.current_action_value = self.sum_action_values / self.visits
+        self.incertitude = self.prior / (1 + self.visits)
         if self.parent:
             self.parent.backup(value)
-
-    def base_incertitude(self):
-        return self.prior / (1 + self.visits)
 
     def free(self):
         del self.parent
@@ -49,7 +48,11 @@ class Node:
         """
         if self.is_leaf:
             return self
-        total_visits: float = np.sqrt(np.sum(vget_visits(self.children)))
+        if self.inbound:
+            # I have as much visits as the sum of the visits of my children
+            total_visits: float = np.sqrt(self.inbound.visits)
+        else:
+            total_visits: float = np.sqrt(np.sum(vget_visits(self.children)))
         values: np.ndarray = vget_base_incertitudes(self.children) * total_visits * cpuct
         values += vget_action_values(self.children)
         index: int = np.argmax(values)
