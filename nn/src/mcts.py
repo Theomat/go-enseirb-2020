@@ -50,12 +50,12 @@ class MCTS:
             actions.append(action)
             state = torch.zeros_like(self._vector)
             # Rollout the history
-            state[2:self.tensor_size - 1, :, :] = self._vector[:self.tensor_size - 3, :, :]
+            state[2:self.tensor_size - 1, :, :] = self._vector[:self.tensor_size - 3, :, :].clone().detach()
             # Add board features
-            state[0, :, :] = torch.reshape(self.torch_board == 0, (9, 9))
-            state[1, :, :] = torch.reshape(self.torch_board == 1, (9, 9))
+            state[0, :, :] = torch.reshape(self.torch_board == 1, (9, 9))
+            state[1, :, :] = torch.reshape(self.torch_board == 2, (9, 9))
             # Swap turn
-            state[self.tensor_size - 1] = 1 - self._vector[self.tensor_size - 1]
+            state[-1] = 1 - self._vector[-1]
             states.append((state, self.export_save()))
             self.board.pop()
         return actions, states
