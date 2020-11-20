@@ -112,7 +112,7 @@ class MCTS:
                     actions, states = self.explore_legal_moves()
                     priors, value = self.evaluate(node.state[0])
                     node.expand(actions, states, priors, value)
-            self.logger.log(5, "Simulations completed")
+            self.logger.log(5, f"{self.simulations_per_play} simulations completed")
             play_tuple: Tuple[Edge, torch.FloatTensor] = root.play(temperature)
             edge: Edge = play_tuple[0]
             pi: torch.FloatTensor = play_tuple[1]
