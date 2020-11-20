@@ -12,6 +12,7 @@ class MCTS:
 
     def __init__(self, model):
         self.model = model
+        self.model.eval()
         # Max Game duration
         self.T: int = 200
         self.v_resign: float = -0.99
