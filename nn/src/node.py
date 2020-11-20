@@ -1,6 +1,7 @@
 from typing import Tuple, Optional
 
 import numpy as np
+import torch
 
 vget_visits = np.vectorize(lambda x: x.visits, otypes=[np.float])
 vget_base_incertitudes = np.vectorize(lambda x: x.incertitude)
@@ -74,8 +75,8 @@ class Node:
         if self.inbound:
             self.inbound.backup(value)
 
-    def play(self, temperature: float = 1.0) -> Tuple[Edge, np.ndarray]:
-        array: np.ndarray = np.zeros(82, dtype=np.float)
+    def play(self, temperature: float = 1.0) -> Tuple[Edge, torch.FloatTensor]:
+        array: np.ndarray = torch.zeros(82, dtype=torch.float32)
         if temperature <= 0:
             # If temperature is 0 then choose the node with the most visits
             # having a temperature of 10**(-5) creates overflow very easily

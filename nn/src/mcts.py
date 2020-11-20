@@ -90,7 +90,7 @@ class MCTS:
         Does one game of selfplay.
         """
         self.reset()
-        training_data = []
+        training_data: List[List] = []
         coeff: int = 1
         root: Node = Node(self.get_state(), None)
         played_turns: int = 0
@@ -113,9 +113,9 @@ class MCTS:
                     priors, value = self.evaluate(node.state[0])
                     node.expand(actions, states, priors, value)
             self.logger.log(5, "Simulations completed")
-            play_tuple = root.play(temperature)
+            play_tuple: Tuple[Edge, torch.FloatTensor] = root.play(temperature)
             edge: Edge = play_tuple[0]
-            pi: np.ndarray = play_tuple[1]
+            pi: torch.FloatTensor = play_tuple[1]
             self.set_game(edge.child.state)
             # Save training data
             training_data.append([root.state[0], pi, coeff])
