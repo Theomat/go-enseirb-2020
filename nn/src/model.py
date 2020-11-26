@@ -29,14 +29,34 @@ class AlphaGoCnn(nn.Module):
         return x
 
 
+CONVOLUTIONAL_FILTERS = 64
+
+
 class ConvolutionalBlock(nn.Module):
     def __init__(self, features=15):
         super(ConvolutionalBlock, self).__init__()
-        self.conv = nn.Conv2d(features, 256, 3, padding=1)
-        self.bn = nn.BatchNorm2d(256)
+        self.conv = nn.Conv2d(features, CONVOLUTIONAL_FILTERS, 3, padding=1)
+        self.bn = nn.BatchNorm2d(CONVOLUTIONAL_FILTERS)
 
     def forward(self, x):
         return F.relu(self.bn(self.conv(x)))
+
+
+class ResidualLayer(nn.Module):
+    def __init__(self):
+        super(ResidualLayer, self).__init__()
+
+        self.layers = nn.Sequential(
+            nn.Conv2d(CONVOLUTIONAL_FILTERS, CONVOLUTIONAL_FILTERS, 3, padding=1),
+            nn.BatchNorm2d(CONVOLUTIONAL_FILTERS),
+            nn.ReLU(),
+            nn.Conv2d(CONVOLUTIONAL_FILTERS, CONVOLUTIONAL_FILTERS, 3, padding=1),
+            nn.BatchNorm2d(CONVOLUTIONAL_FILTERS),
+            nn.ReLU()
+        )
+
+    def forward(self, x):
+        return self.layers(x)
 
 
 class ResidualBlock(nn.Module):
@@ -44,21 +64,13 @@ class ResidualBlock(nn.Module):
     def __init__(self, blocks=9):
         super(ResidualBlock, self).__init__()
 
-        self.layers = []
-        for _ in range(blocks):
-            self.layers.append({
-                'conv1': nn.Conv2d(256, 256, 3, padding=1),
-                'bn1': nn.BatchNorm2d(256),
-                'conv2': nn.Conv2d(256, 256, 3, padding=1),
-                'bn2': nn.BatchNorm2d(256)
-            })
+        self.layers = nn.ModuleList([ResidualLayer() for _ in range(blocks)])
 
     def forward(self, x):
 
-        ipt = x.clone()
+        ipt = x.clone().to(x.device)
         for layer in self.layers:
-            x = F.relu(layer['bn1'](layer['conv1'](x)))
-            x = F.relu(layer['bn2'](layer['conv2'](x)))
+            x = layer(x)
             x.add_(ipt)
             x = F.relu(x)
 
@@ -70,14 +82,16 @@ class PolicyNN(nn.Module):
     def __init__(self):
         super(PolicyNN, self).__init__()
 
-        self.conv = nn.Conv2d(256, 2, 1)
+        self.conv = nn.Conv2d(CONVOLUTIONAL_FILTERS, 2, 1)
         self.bn = nn.BatchNorm2d(2)
         self.fc = nn.Linear(2 * 9 * 9, 9 * 9 + 1)
 
     def forward(self, x):
         x = F.relu(self.bn(self.conv(x)))
         x = x.view(-1, 2 * 9 * 9)
-        return self.fc(x)
+
+        # TODO: I added the softmax, is it correct ? who knows
+        return torch.softmax(self.fc(x), dim=1)
 
 
 class ValueNN(nn.Module):
@@ -85,7 +99,7 @@ class ValueNN(nn.Module):
     def __init__(self):
         super(ValueNN, self).__init__()
 
-        self.conv = nn.Conv2d(256, 2, 1)
+        self.conv = nn.Conv2d(CONVOLUTIONAL_FILTERS, 2, 1)
         self.bn = nn.BatchNorm2d(2)
         self.fc1 = nn.Linear(2 * 9 * 9, 256)
         self.fc2 = nn.Linear(256, 1)
