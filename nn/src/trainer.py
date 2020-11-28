@@ -38,15 +38,7 @@ class Trainer:
         if self._train_steps_since_last_checkpoint == self.checkpoint:
             self.on_checkpoint()
 
-        samples = self.replay_buffer.sample(self.sample_size)
-        inputs = torch.tensor([s for (s, _, _) in samples])
-
-        # TODO: we need a faster way to do it (with pytorch when using tensors), this is just the dumb (correct) way
-        y_target = [(pi, r) for (_, pi, r) in samples]
-        pi, z = list(zip(*y_target))
-
-        pi = torch.tensor(pi)
-        z = torch.tensor(z)
+        inputs, pi, z = self.replay_buffer.sample(self.sample_size)
 
         self.optimizer.zero_grad()
 
