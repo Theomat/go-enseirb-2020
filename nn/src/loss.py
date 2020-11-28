@@ -16,7 +16,8 @@ def alpha_go_zero_loss(p, v, pi, z):
     value_error = (z - v) ** 2                      # shape is N, 1
 
     p = F.log_softmax(p, dim=-1)                    # shape is N, a
-    pi = F.softmax(pi, dim=-1)                      # shape is N, a
+    # p = torch.log(p)                    # shape is N, a
+    # pi = F.softmax(pi, dim=-1)                      # shape is N, a
 
     policy_error = torch.sum(pi * p, dim=1)         # shape is N, 1
 

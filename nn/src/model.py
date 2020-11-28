@@ -91,7 +91,8 @@ class PolicyNN(nn.Module):
         x = x.view(-1, 2 * 9 * 9)
 
         # TODO: I added the softmax, is it correct ? who knows
-        return torch.softmax(self.fc(x), dim=1)
+        # return torch.softmax(self.fc(x), dim=1)
+        return self.fc(x)
 
 
 class ValueNN(nn.Module):
