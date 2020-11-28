@@ -23,7 +23,7 @@ LR = 0.001
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = AlphaGoZero(residual=9).float().to(device)
 
-Xtrain, Xtest = train_test_split(total_samples, test_size=TEST_SPLIT)
+Xtrain, Xtest = train_test_split(total_samples, test_size=TEST_SPLIT, random_state=42)
 
 # model.load_state_dict(torch.load("model_8.pt"))
 
