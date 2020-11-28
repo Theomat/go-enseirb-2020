@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from model import AlphaGoZero
 from loss import alpha_go_zero_loss
@@ -14,17 +15,28 @@ f = open('./samples.npy', 'rb')
 total_samples = pickle.load(f)
 f.close()
 
+
+TEST_BUFFER_SIZE = 500
+TEST_SPLIT = TEST_BUFFER_SIZE / len(total_samples)
+FREQ_TEST = 10
 LR = 0.001
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = AlphaGoZero(residual=9).float().to(device)
 
+Xtrain, Xtest = train_test_split(total_samples, test_size=TEST_SPLIT)
+
+# model.load_state_dict(torch.load("model_8.pt"))
+
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4)
 
 writer = SummaryWriter()
 
-buffer = UniformReplayBuffer(len(total_samples))
-buffer.store(np.expand_dims(total_samples, axis=0))
+buffer = UniformReplayBuffer(len(Xtrain))
+buffer.store(np.expand_dims(Xtrain, axis=0))
+
+test_buffer = UniformReplayBuffer(len(Xtest))
+test_buffer.store(np.expand_dims(Xtest, axis=0))
 
 
 for epoch in tqdm(range(1000)):
@@ -47,5 +59,20 @@ for epoch in tqdm(range(1000)):
     running_loss = loss.item()
 
     writer.add_scalar('train_loss', running_loss, epoch)
+    if epoch % FREQ_TEST == 0:
 
-torch.save(model.state_dict(), 'model.pt')
+        inputs, pi, z = test_buffer.sample(TEST_BUFFER_SIZE)
+
+        inputs = inputs.float().to(device)
+        pi = pi.float().to(device)
+        z = z.float().to(device)
+
+        writer.add_scalar('train_loss', running_loss, epoch)
+        p, v = model(inputs)
+        loss = alpha_go_zero_loss(p, v, pi, z)
+
+        running_loss = loss.item()
+        writer.add_scalar('test_loss', running_loss, epoch)
+
+
+torch.save(model.state_dict(), 'model_3.pt')
