@@ -16,8 +16,7 @@ total_samples = pickle.load(f)
 f.close()
 
 
-TEST_BUFFER_SIZE = 500
-TEST_SPLIT = TEST_BUFFER_SIZE / len(total_samples)
+TEST_SPLIT = .15
 FREQ_TEST = 10
 LR = 0.001
 
@@ -61,7 +60,7 @@ for epoch in tqdm(range(1000)):
     writer.add_scalar('train_loss', running_loss, epoch)
     if epoch % FREQ_TEST == 0:
 
-        inputs, pi, z = test_buffer.sample(TEST_BUFFER_SIZE)
+        inputs, pi, z = test_buffer.sample(len(Xtest))
 
         inputs = inputs.float().to(device)
         pi = pi.float().to(device)
