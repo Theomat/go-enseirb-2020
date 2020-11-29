@@ -16,7 +16,7 @@ total_samples = pickle.load(f)
 f.close()
 
 
-TEST_SPLIT = .15
+TEST_SPLIT = 500
 FREQ_TEST = 10
 LR = 0.001
 
