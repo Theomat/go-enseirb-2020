@@ -39,11 +39,13 @@ class Trainer:
 
         self.iter: int = 0
 
+        self.episodes = episodes_per_step
+
     def produce_episodes(self, episodes: int = 25000):
         mcts = MCTS(self.model)
         # Maybe use tqdm ?
-        for _ in range(episodes):
-            self.replay_buffer.store(np.expand_dims(mcts.self_play(), axis=0))
+        for _ in trange(episodes, desc="episode"):
+            self.replay_buffer.store([mcts.self_play()])
 
     def _training_step(self):
         self._train_steps_since_last_checkpoint += 1
@@ -69,8 +71,8 @@ class Trainer:
         self.iter += 1
 
     def train(self, training_steps: int):
-        for _ in trange(training_steps):
-            self.produce_episodes()
+        for _ in trange(training_steps, desc="step"):
+            self.produce_episodes(self.episodes)
             self._training_step()
 
     def on_checkpoint(self):
