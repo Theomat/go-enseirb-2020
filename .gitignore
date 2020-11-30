@@ -136,7 +136,6 @@ dmypy.json
 # Goban files (or should we commit it ?)
 *GnuGo.py
 *gnugoPlayer.py
-*Goban.py
 *localGame.py
 *myPlayer.py
 *namedGame.py
