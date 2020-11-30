@@ -13,7 +13,8 @@ from tqdm import trange
 class Trainer:
 
     def __init__(self, replay_buffer, lr: float = 1e-3, file: str = None,
-                 episodes_per_step: int = 100, checkpoint: int = 1000, cuda: int = 0):
+                 episodes_per_step: int = 100, checkpoint: int = 1000, cuda: int = 0,
+                 batch_size: int = 2048):
         # autodetect best device
         self.device = f"cuda:{cuda}" if torch.cuda.is_available() else "cpu"
         print(f"Training on {'cpu' if self.device == 'cpu' else 'cuda:'+ str(cuda)+ ' ' + torch.cuda.get_device_name(cuda)}")
@@ -32,7 +33,7 @@ class Trainer:
         # the number of training steps between each checkpoint
         self.checkpoint: int = checkpoint
         self._train_steps_since_last_checkpoint: int = 0
-        self.sample_size: int = 2048
+        self.sample_size: int = batch_size
 
         self.iter: int = 0
 
@@ -40,7 +41,6 @@ class Trainer:
 
     def produce_episodes(self, episodes: int = 25000):
         mcts = MCTS(self.model, self.device)
-        # Maybe use tqdm ?
         for _ in trange(episodes, desc="episode"):
             self.replay_buffer.store([mcts.self_play()])
 
@@ -72,7 +72,10 @@ class Trainer:
             self.produce_episodes(self.episodes)
             self._training_step()
 
+    def save(self, path: str):
+        torch.save(self.model.state_dict(), path)
+
     def on_checkpoint(self):
         # TODO: keep the best NN, should we really do that ? I'm a bit lazy :P (just keep the last one, fuck it XD)
         # Save the best model
-        torch.save(self.model.state_dict(), f'alphago_zero_model_{int(time.time())}.pt')
+        self.save(f'alphago_zero_model_{int(time.time())}.pt')
