@@ -1,7 +1,6 @@
 from mcts import MCTS
 from model import AlphaGoZero
 from loss import alpha_go_zero_loss
-from uniform_replay_buffer import UniformReplayBuffer
 
 import time
 
@@ -10,16 +9,14 @@ from torch.utils.tensorboard import SummaryWriter
 
 from tqdm import trange
 
-import numpy as np
-
 
 class Trainer:
 
     def __init__(self, replay_buffer, lr: float = 1e-3, file: str = None,
-                 episodes_per_step: int = 100, checkpoint: int = 1000):
+                 episodes_per_step: int = 100, checkpoint: int = 1000, cuda: int = 0):
         # autodetect best device
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        print(f"Training on {'cpu' if self.device == 'cpu' else torch.cuda.get_device_name(0)}")
+        self.device = f"cuda:{cuda}" if torch.cuda.is_available() else "cpu"
+        print(f"Training on {'cpu' if self.device == 'cpu' else 'cuda:'+ str(cuda)+ ' ' + torch.cuda.get_device_name(cuda)}")
 
         self.model = AlphaGoZero().to(self.device)
         # self.best = AlphaGoZero().to(self.device)
@@ -42,7 +39,7 @@ class Trainer:
         self.episodes = episodes_per_step
 
     def produce_episodes(self, episodes: int = 25000):
-        mcts = MCTS(self.model)
+        mcts = MCTS(self.model, self.device)
         # Maybe use tqdm ?
         for _ in trange(episodes, desc="episode"):
             self.replay_buffer.store([mcts.self_play()])
@@ -79,9 +76,3 @@ class Trainer:
         # TODO: keep the best NN, should we really do that ? I'm a bit lazy :P (just keep the last one, fuck it XD)
         # Save the best model
         torch.save(self.model.state_dict(), f'alphago_zero_model_{int(time.time())}.pt')
-
-
-if __name__ == "__main__":
-    buffer = UniformReplayBuffer(size=10**6)
-    trainer = Trainer(buffer, file="./model_9.pt", episodes_per_step=100)
-    trainer.train(10)

@@ -10,8 +10,9 @@ import Goban
 
 class MCTS:
 
-    def __init__(self, model):
+    def __init__(self, model, device):
         self.model = model
+        self.device = device
         self.model.eval()
         # Max Game duration
         self.T: int = 200
@@ -66,7 +67,7 @@ class MCTS:
         """
         state = state.view(1, *state.shape).float()
 
-        p, v = self.model(state)
+        p, v = self.model(state.to(self.device))
 
         return p.detach().cpu().numpy()[0], v.detach().cpu().numpy()[0][0]
 
