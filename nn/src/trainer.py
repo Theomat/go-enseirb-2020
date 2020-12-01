@@ -6,7 +6,6 @@ import time
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-
 from tqdm import trange
 
 
@@ -54,10 +53,10 @@ class Trainer:
         self.optimizer.zero_grad()
 
         # TODO: do loss, the following doesn't work I know XD
-        p, v = self.model(inputs)
+        p, v = self.model(inputs.float().to(self.device))
 
         # where p and v are the predicted values and pi and z the target values
-        loss = alpha_go_zero_loss(p, v, pi, z)
+        loss = alpha_go_zero_loss(p, v, pi.to(self.device), z.to(self.device))
 
         loss.backward()
         self.optimizer.step()
