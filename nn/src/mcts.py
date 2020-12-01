@@ -16,6 +16,7 @@ class MCTS:
         self.model.eval()
         # Max Game duration
         self.T: int = 200
+        self.max_depth: int = 100
         self.v_resign: float = -0.99
         self.simulations_per_play: int = 100
         # Number of moves after which temperature is set to something close to 0
@@ -107,7 +108,7 @@ class MCTS:
             for _ in range(self.simulations_per_play):
                 node: Node = root.select()  # TODO: choose parameter cpuct
                 self.set_game(node.state)
-                if self.is_closed():
+                if self.is_closed() or node.depth >= self.max_depth:
                     node.backup(node.inbound.current_action_value)
                 else:
                     actions, states = self.explore_legal_moves()
