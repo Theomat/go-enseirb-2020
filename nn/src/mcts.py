@@ -108,7 +108,11 @@ class MCTS:
             for _ in range(self.simulations_per_play):
                 node: Node = root.select()  # TODO: choose parameter cpuct
                 self.set_game(node.state)
-                if self.is_closed() or root.depth - node.depth >= self.max_depth:
+                parent_depth: int = 0
+                if node.inbound:
+                    parent: Node = node.inbound.parent
+                    parent_depth: int = parent.depth
+                if self.is_closed() or root.depth - parent_depth >= self.max_depth:
                     node.backup(node.inbound.current_action_value)
                 else:
                     actions, states = self.explore_legal_moves()
