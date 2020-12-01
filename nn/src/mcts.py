@@ -53,10 +53,10 @@ class MCTS:
             # Rollout the history
             state[2:self.tensor_size - 1, :, :] = self._vector[:self.tensor_size - 3, :, :].clone().detach()
             # Add board features
-            state[0, :, :] = torch.reshape(self.torch_board == 1, (9, 9))
-            state[1, :, :] = torch.reshape(self.torch_board == 2, (9, 9))
+            state[0, :, :] = torch.reshape(self.torch_board == 1, (9, 9)).clone().detach()
+            state[1, :, :] = torch.reshape(self.torch_board == 2, (9, 9)).clone().detach()
             # Swap turn
-            state[-1] = 1 - self._vector[-1]
+            state[-1] = 1 - self._vector[-1].clone().detach()
             states.append((state, self.export_save()))
             self.board.pop()
         return actions, states
@@ -102,7 +102,7 @@ class MCTS:
                 self.logger.debug(f"Resigned at turn {played_turns}")
                 resigned = True
                 break
-            self.logger.log(7, f"Turn {played_turns} start")
+            self.logger.log(7, f"Turn {played_turns} start, depth={root.depth}")
             root.add_dirichlet_noise()
             for _ in range(self.simulations_per_play):
                 node: Node = root.select()  # TODO: choose parameter cpuct
