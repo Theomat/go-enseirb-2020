@@ -20,13 +20,13 @@ class Edge:
         self.child = child
         self.action: int = action
 
-    def backup(self, value: float):
+    def backup(self, value: float, child_depth: int):
         self.sum_action_values += value
         self.visits += 1
         self.current_action_value = self.sum_action_values / self.visits
         self.incertitude = self.prior / (1 + self.visits)
         if self.parent:
-            self.parent.backup(value)
+            self.parent.backup(value, child_depth)
 
     def free(self):
         del self.parent
@@ -38,6 +38,8 @@ class Node:
         self.state = state
         self.inbound: Edge = inbound
         self.children: Optional[np.ndarray] = None
+        self.depth: int = 0
+        self._max_child_depth: int = 0
 
     @property
     def is_leaf(self) -> bool:
@@ -69,11 +71,14 @@ class Node:
             edge.child = Node(state, edge)
             self.children[index] = edge
             index += 1
-        self.backup(value)
+        self.backup(value, 1)
 
-    def backup(self, value: float):
+    def backup(self, value: float, child_depth: int = 0):
+        if child_depth > self._max_child_depth:
+            self._max_child_depth = child_depth
+            self.depth = 1 + self._max_child_depth
         if self.inbound:
-            self.inbound.backup(value)
+            self.inbound.backup(value, self.depth)
 
     def play(self, temperature: float = 1.0) -> Tuple[Edge, torch.FloatTensor]:
         array: np.ndarray = torch.zeros(82, dtype=torch.float32)
