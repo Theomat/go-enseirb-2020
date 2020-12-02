@@ -116,7 +116,7 @@ class MCTS:
             self.logger.log(7, f"Turn {played_turns} start, depth={root.depth}")
             root.add_dirichlet_noise()
             for _ in range(self.simulations_per_play):
-                node: Node = root.select()  # TODO: choose parameter cpuct
+                node: Node = root.select(max=coeff == 1)  # TODO: choose parameter cpuct
                 self.set_game(node.state)
                 parent_depth: int = 0
                 if node.inbound:
@@ -199,20 +199,22 @@ class MCTS:
         self.board._pushBoard()
         save = self.board._trailMoves.pop()
         save.append(self.board._historyMoveNames.copy())
+        save.append(self.board._seenHashes.copy())
         return save
 
     def load_save(self, save: List):
-        self.board._historyMoveNames = save[-1].copy()
-        self.board._currentHash = save[-2]
-        self.board._empties = save[-3].copy()
-        self.board._stringSizes = save[-4].copy()
-        self.board._stringLiberties = save[-5].copy()
-        self.board._stringUnionFind = save[-6].copy()
-        self.board._lastPlayerHasPassed = save[-7]
-        self.board._gameOver = save[-8]
-        self.board._board = save[-9].copy()
-        self.board._nextPlayer = save[-10]
-        self.board._capturedBLACK = save[-11]
-        self.board._capturedWHITE = save[-12]
-        self.board._nbBLACK = save[-13]
-        self.board._nbWHITE = save[-14]
+        self.board._seenHashes = save[-1].copy()
+        self.board._historyMoveNames = save[-2].copy()
+        self.board._currentHash = save[-3]
+        self.board._empties = save[-4].copy()
+        self.board._stringSizes = save[-5].copy()
+        self.board._stringLiberties = save[-6].copy()
+        self.board._stringUnionFind = save[-7].copy()
+        self.board._lastPlayerHasPassed = save[-8]
+        self.board._gameOver = save[-9]
+        self.board._board = save[-10].copy()
+        self.board._nextPlayer = save[-11]
+        self.board._capturedBLACK = save[-12]
+        self.board._capturedWHITE = save[-13]
+        self.board._nbBLACK = save[-14]
+        self.board._nbWHITE = save[-15]
