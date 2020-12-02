@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 
-__ticks = ['Filler', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J']
+__ticks = ['Filler', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'Filler']
 
 
 def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis"):
@@ -36,9 +37,15 @@ def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis"):
                 white_pts_x.append(x)
                 white_pts_y.append(y)
 
+    ticks_loc = ax.get_yticks().tolist()
+    ax.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+
+    ticks_loc = ax.get_xticks().tolist()
+    ax.xaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+
     ax.plot(black_pts_x, black_pts_y, 'o', color='black', markersize=20)
     ax.plot(white_pts_x, white_pts_y, 'wo', markersize=20)
     ax.grid(True, which='major', axis='both', color='black')
     ax.set_title(f"Pass probability:{pass_probability}")
     ax.set_xticklabels(__ticks)
-    ax.set_yticklabels(list(reversed(range(1, 11))))
+    ax.set_yticklabels(list(reversed(range(0, 11))))
