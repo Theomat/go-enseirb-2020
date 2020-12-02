@@ -1,6 +1,4 @@
 from node import Node, Edge
-# from go_plot import plot_play_probabilities
-# import matplotlib.pyplot as plt
 
 import logging
 from typing import List, Tuple, Any
@@ -8,9 +6,13 @@ from typing import List, Tuple, Any
 import numpy as np
 import torch
 import Goban
-# from GnuGo import GnuGo
 
 VISUALIZE = False
+
+if VISUALIZE:
+    from GnuGo import GnuGo
+    from go_plot import plot_play_probabilities
+    import matplotlib.pyplot as plt
 
 
 class MCTS:
@@ -34,8 +36,9 @@ class MCTS:
         self.np_array: np.ndarray = np.zeros((9, 9), dtype=np.float)
         self.torch_board = torch.from_numpy(self.np_array)
 
-        # self.gnugo = GnuGo(9)
-        # self.moves = self.gnugo.Moves(self.gnugo)
+        if VISUALIZE:
+            self.gnugo = GnuGo(9)
+            self.moves = self.gnugo.Moves(self.gnugo)
 
     def get_state(self):
         return self._vector, self.export_save()
@@ -124,51 +127,71 @@ class MCTS:
                     parent_depth: int = parent.depth
                 if self.is_closed():
                     node.backup(1 if self.get_winner() == 0 else -1)
-                elif self.root.depth - parent_depth >= self.max_depth:
+                elif root.depth - parent_depth >= self.max_depth:
                     node.backup(node.inbound.current_action_value)
                 else:
                     actions, states = self.explore_legal_moves()
                     priors, value = self.evaluate(node.state[0])
                     node.expand(actions, states, priors, value)
             self.logger.log(5, f"{self.simulations_per_play} simulations completed")
-            play_tuple: Tuple[Edge, torch.FloatTensor] = root.play(temperature)
-            edge: Edge = play_tuple[0]
-            pi: torch.FloatTensor = play_tuple[1]
+            self.set_game(root.state)
 
-            # if VISUALIZE:
-            #     plt.subplot(2, 2, 1)
-            #     self.set_game(root.state)
-            #     plot_play_probabilities(self.board, pi)
-            #
-            #     plt.subplot(2, 2, 2)
-            #     priors, _ = self.evaluate(root.state[0])
-            #     plot_play_probabilities(self.board, priors)
-            #
-            #     gnugo_prob = np.zeros(82)
-            #     status, _ = self.moves._gnugo.query("experimental_score " + self.moves._nextplayer)
-            #     if status != "OK":
-            #         print("Failed !")
-            #     else:
-            #         status, possible_moves = self.moves._gnugo.query("top_moves " + self.moves._nextplayer)
-            #         possible_moves = possible_moves.strip().split()
-            #
-            #         best_moves = [m for idx, m in enumerate(possible_moves) if idx % 2 == 0]
-            #         scores = np.array([float(s) for idx, s in enumerate(possible_moves) if idx % 2 == 1])
-            #         scores /= scores.sum()
-            #         for move, p in zip(best_moves, scores):
-            #             i = Goban.Board.name_to_flat(move)
-            #             gnugo_prob[i] = p
-            #     plt.subplot(2, 2, 3)
-            #     plot_play_probabilities(self.board, gnugo_prob)
+            edge = None
+            # Win if can win
+            if self.board._lastPlayerHasPassed:
+                score = self.board._count_areas()
+                score_black = self.board._nbBLACK + score[0]
+                score_white = self.board._nbWHITE + score[1]
+
+                if (coeff == 1 and score_black > score_white):
+                    edge: Edge = root.get_child_for_action(-1)
+                    pi: torch.FloatTensor = torch.zeros((82))
+                    pi[-1] = 1.
+                if (coeff == -1 and score_white > score_black):
+                    edge: Edge = root.get_child_for_action(-1)
+                    pi: torch.FloatTensor = torch.zeros((82))
+                    pi[-1] = 1.
+
+            if edge is None:
+                play_tuple: Tuple[Edge, torch.FloatTensor] = root.play(temperature)
+                edge: Edge = play_tuple[0]
+                pi: torch.FloatTensor = play_tuple[1]
+
+            if VISUALIZE:
+                plt.figure(figsize=(8, 6))
+                plt.subplot(2, 2, 1)
+                self.set_game(root.state)
+                plot_play_probabilities(self.board, pi)
+
+                plt.subplot(2, 2, 2)
+                priors, _ = self.evaluate(root.state[0])
+                plot_play_probabilities(self.board, priors)
+
+                gnugo_prob = np.zeros(82)
+                status, _ = self.moves._gnugo.query("experimental_score " + self.moves._nextplayer)
+                if status != "OK":
+                    print("Failed !")
+                else:
+                    status, possible_moves = self.moves._gnugo.query("top_moves " + self.moves._nextplayer)
+                    possible_moves = possible_moves.strip().split()
+
+                    best_moves = [m for idx, m in enumerate(possible_moves) if idx % 2 == 0]
+                    scores = np.array([float(s) for idx, s in enumerate(possible_moves) if idx % 2 == 1])
+                    scores /= scores.sum()
+                    for move, p in zip(best_moves, scores):
+                        i = Goban.Board.name_to_flat(move)
+                        gnugo_prob[i] = p
+                plt.subplot(2, 2, 3)
+                plot_play_probabilities(self.board, gnugo_prob)
 
             self.set_game(edge.child.state)
-            # if VISUALIZE:
-            #     plt.subplot(2, 2, 4)
-            #     plot_play_probabilities(self.board, np.zeros(82))
-            #     plt.gca().set_title("Resulting game")
-            #     plt.show()
-            #
-            # self.moves.playthis(Goban.Board.flat_to_name(edge.action))
+            if VISUALIZE:
+                plt.subplot(2, 2, 4)
+                plot_play_probabilities(self.board, np.zeros(82))
+                plt.gca().set_title("Resulting game")
+                plt.show()
+
+                self.moves.playthis(Goban.Board.flat_to_name(edge.action))
 
             # Save training data
             training_data.append([root.state[0], pi, coeff])
