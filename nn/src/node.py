@@ -136,3 +136,8 @@ class Node:
         del self.state
         del self.inbound
         del self.children
+
+    def get_child_for_action(self, action: int) -> Edge:
+        for i in range(self.children.shape[0]):
+            if self.children[i].action == action:
+                return self.children[i]
