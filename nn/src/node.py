@@ -45,7 +45,7 @@ class Node:
     def is_leaf(self) -> bool:
         return self.children is None
 
-    def select(self, cpuct: float = 1.0):
+    def select(self, cpuct: float = 1.0, max: bool = True):
         """
         Returns a Node
         """
@@ -57,10 +57,10 @@ class Node:
         else:
             total_visits: float = np.sqrt(np.sum(vget_visits(self.children)))
         values: np.ndarray = vget_base_incertitudes(self.children) * total_visits * cpuct
-        values += vget_action_values(self.children)
+        values += vget_action_values(self.children) * (1 if max else -1)
         index: int = np.argmax(values)
         selected_edge: Edge = self.children[index]
-        return selected_edge.child.select(cpuct)
+        return selected_edge.child.select(cpuct, not max)
 
     def expand(self, actions, states, priors, value):
         self.children: np.ndarray = np.zeros(len(actions), dtype=Edge)
