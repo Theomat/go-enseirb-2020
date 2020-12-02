@@ -43,8 +43,8 @@ def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis"):
     ticks_loc = ax.get_xticks().tolist()
     ax.xaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
 
-    ax.plot(black_pts_x, black_pts_y, 'o', color='black', markersize=20)
-    ax.plot(white_pts_x, white_pts_y, 'wo', markersize=20)
+    ax.plot(black_pts_x, black_pts_y, 'o', color='black', markersize=15)
+    ax.plot(white_pts_x, white_pts_y, 'wo', markersize=15)
     ax.grid(True, which='major', axis='both', color='black')
     ax.set_title(f"Pass probability:{pass_probability}")
     ax.set_xticklabels(__ticks)
