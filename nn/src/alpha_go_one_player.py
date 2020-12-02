@@ -32,8 +32,6 @@ class myPlayer(PlayerInterface):
         self.board: Goban.Board = Goban.Board()
         self.np_array: np.ndarray = np.zeros((9, 9), dtype=np.float)
         self.torch_board = torch.from_numpy(self.np_array)
-        self.reset()
-        self.root: Node = Node(self.get_state(), None)
 
     def getPlayerName(self):
         return "AlphaGoOne"
@@ -72,9 +70,7 @@ class myPlayer(PlayerInterface):
         print("Opponent played ", move, "i.e. ", move)  # New here
         flat = Goban.Board.name_to_flat(move)
         if self.root.depth == 0:
-            self.reset()
-            self.root.free_except(None)
-            self.root: Node = Node(self.get_state(), None)
+            raise("Failed")
         else:
             edge: Edge = self.root.get_child_for_action(flat)
             self.set_game(edge.child.state)
@@ -86,6 +82,11 @@ class myPlayer(PlayerInterface):
         self._mycolor = color
         self._opponent = Goban.Board.flip(color)
         self.reset()
+        self.root: Node = Node(self.get_state(), None)
+        if self._mycolor == Goban.Board._WHITE:
+            actions, states = self.explore_legal_moves()
+            priors, value = self.evaluate(self.root.state[0])
+            self.root.expand(actions, states, priors, value)
 
     def get_state(self):
         return self._vector, self.export_save()
@@ -152,9 +153,9 @@ class myPlayer(PlayerInterface):
         # TODO: Replace by Taylor-Tromp score
         (black, white) = self.board.compute_score()
         if black > white:
-            return self.my_color == Goban.Board._BLACK
+            return self._mycolor == Goban.Board._BLACK
         else:
-            return self.my_color == Goban.Board._WHITE
+            return self._mycolor == Goban.Board._WHITE
 
     def export_save(self):
         self.board._pushBoard()
