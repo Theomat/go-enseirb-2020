@@ -1,4 +1,6 @@
 from node import Node, Edge
+# from go_plot import plot_play_probabilities
+# import matplotlib.pyplot as plt
 
 import logging
 from typing import List, Tuple, Any
@@ -6,6 +8,9 @@ from typing import List, Tuple, Any
 import numpy as np
 import torch
 import Goban
+# from GnuGo import GnuGo
+
+VISUALIZE = False
 
 
 class MCTS:
@@ -26,7 +31,11 @@ class MCTS:
         self.tensor_size: int = 2 * self.len_history + 1
         self.logger: logging.Logger = logging.getLogger("MCTS")
         self.board: Goban.Board = Goban.Board()
-        self.torch_board = torch.from_numpy(self.board._board)
+        self.np_array: np.ndarray = np.zeros((9, 9), dtype=np.float)
+        self.torch_board = torch.from_numpy(self.np_array)
+
+        # self.gnugo = GnuGo(9)
+        # self.moves = self.gnugo.Moves(self.gnugo)
 
     def get_state(self):
         return self._vector, self.export_save()
@@ -49,6 +58,7 @@ class MCTS:
             if not success:
                 self.board.pop()
                 continue
+            self.np_array[:, :] = self.board._board.reshape((9, 9))
             actions.append(action)
             state = torch.zeros_like(self._vector)
             # Rollout the history
@@ -70,7 +80,7 @@ class MCTS:
 
         p, v = self.model(state.to(self.device))
 
-        return p.detach().cpu().numpy()[0], v.detach().cpu().numpy()[0][0]
+        return torch.softmax(p, dim=1).detach().cpu().numpy()[0], v.detach().cpu().numpy()[0][0]
 
     def reset(self):
         """
@@ -122,7 +132,42 @@ class MCTS:
             play_tuple: Tuple[Edge, torch.FloatTensor] = root.play(temperature)
             edge: Edge = play_tuple[0]
             pi: torch.FloatTensor = play_tuple[1]
+
+            # if VISUALIZE:
+            #     plt.subplot(2, 2, 1)
+            #     self.set_game(root.state)
+            #     plot_play_probabilities(self.board, pi)
+            #
+            #     plt.subplot(2, 2, 2)
+            #     priors, _ = self.evaluate(root.state[0])
+            #     plot_play_probabilities(self.board, priors)
+            #
+            #     gnugo_prob = np.zeros(82)
+            #     status, _ = self.moves._gnugo.query("experimental_score " + self.moves._nextplayer)
+            #     if status != "OK":
+            #         print("Failed !")
+            #     else:
+            #         status, possible_moves = self.moves._gnugo.query("top_moves " + self.moves._nextplayer)
+            #         possible_moves = possible_moves.strip().split()
+            #
+            #         best_moves = [m for idx, m in enumerate(possible_moves) if idx % 2 == 0]
+            #         scores = np.array([float(s) for idx, s in enumerate(possible_moves) if idx % 2 == 1])
+            #         scores /= scores.sum()
+            #         for move, p in zip(best_moves, scores):
+            #             i = Goban.Board.name_to_flat(move)
+            #             gnugo_prob[i] = p
+            #     plt.subplot(2, 2, 3)
+            #     plot_play_probabilities(self.board, gnugo_prob)
+
             self.set_game(edge.child.state)
+            # if VISUALIZE:
+            #     plt.subplot(2, 2, 4)
+            #     plot_play_probabilities(self.board, np.zeros(82))
+            #     plt.gca().set_title("Resulting game")
+            #     plt.show()
+            #
+            # self.moves.playthis(Goban.Board.flat_to_name(edge.action))
+
             # Save training data
             training_data.append([root.state[0], pi, coeff])
             # Change root and free it
