@@ -27,6 +27,6 @@ sys.setrecursionlimit(parameters.recursion_limit)
 
 buffer = UniformReplayBuffer(size=parameters.replay_size)
 trainer = Trainer(buffer, file=parameters.model, episodes_per_step=parameters.episodes, lr=parameters.lr,
-                  cuda=parameters.gpu, batch_size=parameters.batch_size)
+                  cuda=parameters.gpu, batch_size=parameters.batch_size, checkpoint=parameters.checkpoints)
 trainer.train(parameters.epochs)
 trainer.save(parameters.output)
