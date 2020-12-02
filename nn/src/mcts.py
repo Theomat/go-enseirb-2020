@@ -122,7 +122,9 @@ class MCTS:
                 if node.inbound:
                     parent: Node = node.inbound.parent
                     parent_depth: int = parent.depth
-                if self.is_closed() or root.depth - parent_depth >= self.max_depth:
+                if self.is_closed():
+                    node.backup(1 if self.get_winner() == 0 else -1)
+                elif self.root.depth - parent_depth >= self.max_depth:
                     node.backup(node.inbound.current_action_value)
                 else:
                     actions, states = self.explore_legal_moves()
