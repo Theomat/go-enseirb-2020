@@ -40,6 +40,17 @@ class myPlayer(PlayerInterface):
         if self.board.is_game_over():
             print("Referee told me to play but the game is over!")
             return "PASS"
+
+        if self.board._lastPlayerHasPassed:
+            score = self.board._count_areas()
+            score_black = self.board._nbBLACK + score[0]
+            score_white = self.board._nbWHITE + score[1]
+
+            if(self._mycolor == Goban.Board._BLACK and score_black > score_white):
+                return 'PASS'
+            if(self._mycolor == Goban.Board._WHITE and score_white > score_black):
+                return 'PASS'
+
         for _ in range(self.simulations_per_play):
             node: Node = self.root.select(max=self._mycolor == Goban.Board._BLACK)  # TODO: choose parameter cpuct
             self.set_game(node.state)
