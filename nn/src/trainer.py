@@ -21,7 +21,7 @@ class Trainer:
         self.model = AlphaGoZero().to(self.device)
         # self.best = AlphaGoZero().to(self.device)
         if file:
-            self.model.load_state_dict(torch.load(file))
+            self.model.load_state_dict(torch.load(file, map_location=torch.device('cpu')))
             # self.best.load_state_dict(torch.load(file))
 
         self.replay_buffer = replay_buffer
