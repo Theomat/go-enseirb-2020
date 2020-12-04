@@ -11,7 +11,7 @@ from loss import alpha_go_zero_loss
 from uniform_replay_buffer import UniformReplayBuffer
 
 
-f = open('./samples.npy', 'rb')
+f = open('./samples_aug.npy', 'rb')
 total_samples = pickle.load(f)
 f.close()
 
@@ -23,7 +23,14 @@ LR = 0.001
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = AlphaGoZero(residual=9).float().to(device)
 
-Xtrain, Xtest = train_test_split(total_samples, test_size=TEST_SPLIT, random_state=42)
+
+Xtrain, Xtest = train_test_split(total_samples, test_size=int(0.04 * len(total_samples)), random_state=42)
+
+device_name = "cpu" if device == "cpu" else torch.cuda.get_device_name(0)
+
+print('Training on' + device_name)
+print(len(Xtrain))
+print(len(Xtest))
 
 # model.load_state_dict(torch.load("model_8.pt"))
 
@@ -38,9 +45,9 @@ test_buffer = UniformReplayBuffer(len(Xtest))
 test_buffer.store(np.expand_dims(Xtest, axis=0))
 
 
-for epoch in tqdm(range(1000)):
+for epoch in tqdm(range(5000)):
 
-    inputs, pi, z = buffer.sample(128)
+    inputs, pi, z = buffer.sample(256)
 
     inputs = inputs.float().to(device)
     pi = pi.float().to(device)
@@ -60,7 +67,7 @@ for epoch in tqdm(range(1000)):
     writer.add_scalar('train_loss', running_loss, epoch)
     if epoch % FREQ_TEST == 0:
 
-        inputs, pi, z = test_buffer.sample(len(Xtest))
+        inputs, pi, z = test_buffer.sample(256)
 
         inputs = inputs.float().to(device)
         pi = pi.float().to(device)

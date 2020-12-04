@@ -21,7 +21,7 @@ def alpha_go_zero_loss(p, v, pi, z):
 
     policy_error = torch.sum(pi * p, dim=1)         # shape is N, 1
 
-    return (value_error-policy_error).mean()        # shape is 1,1
+    return (value_error - policy_error).mean()        # shape is 1,1
 
 
 def __test_loss():

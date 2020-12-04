@@ -20,7 +20,7 @@ class myPlayer(PlayerInterface):
         self._mycolor = None
 
         self.model = AlphaGoZero()
-        self.model.load_state_dict(torch.load("model.pt"))
+        self.model.load_state_dict(torch.load("model_3.pt"))
 
         self.device = "cpu"
         self.model.eval()

@@ -70,7 +70,7 @@ def get_prob_reward(table, gnugo):
 
     assert len(best_moves) == len(scores)
 
-    prob_distr = scores/scores.sum()
+    prob_distr = scores / scores.sum()
     probs = np.zeros(82)
 
     for idx, m in enumerate(best_moves):
@@ -78,9 +78,9 @@ def get_prob_reward(table, gnugo):
         probs[flat_move] = prob_distr[idx]
 
     if table['depth'] % 2 == 0:                         # black plays next
-        reward = table['black_wins']/table['rollouts']
+        reward = table['black_wins'] / table['rollouts']
     else:                                               # white plays next
-        reward = table['white_wins']/table['rollouts']
+        reward = table['white_wins'] / table['rollouts']
 
     gnugo.query("clear_board")
 
@@ -97,7 +97,7 @@ for idx, table in enumerate(tqdm(tables)):
 
     assert table['depth'] == len(table['list_of_moves'])
 
-    vector = np.zeros((2*history_size + 1, 9, 9), dtype=np.float64)
+    vector = np.zeros((2 * history_size + 1, 9, 9), dtype=np.float64)
     base = np.zeros((2, 9, 9), dtype=np.float64)
     next_to_play = 0
     skip = False
@@ -123,14 +123,14 @@ for idx, table in enumerate(tqdm(tables)):
         base[next_to_play, lin, col] = 1
 
         real_size = len(table['list_of_moves'][-history_size:])
-        final_idx = 2*(real_size-1-idx)
+        final_idx = 2 * (real_size - 1 - idx)
 
-        vector[final_idx+1] = base[1]
+        vector[final_idx + 1] = base[1]
         vector[final_idx] = base[0]
 
         next_to_play = (next_to_play + 1) % 2
 
-    vector[2*history_size] = table['depth'] % 2
+    vector[2 * history_size] = table['depth'] % 2
 
     if not skip:
         p, r = get_prob_reward(table, gnugo)

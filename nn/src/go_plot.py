@@ -5,7 +5,7 @@ import numpy as np
 __ticks = ['Filler', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'Filler']
 
 
-def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis"):
+def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis", is_real_board=False):
     """
     Plot the Go board with play probabilities.
     You need to call ```plot.show``` afterwards because this only plots on the current Axes object.
@@ -17,7 +17,10 @@ def plot_play_probabilities(board, probabilities: np.ndarray, cmap="viridis"):
     - **cmap**: (*optional*) the color map to use
     """
     ax = plt.gca()
-    real_board = board._board.reshape((9, 9))
+    if is_real_board:
+        real_board = board
+    else:
+        real_board = board._board.reshape((9, 9))
 
     pass_probability: float = probabilities[-1]
     probabilities: np.ndarray = probabilities[:-1].reshape((9, 9))
