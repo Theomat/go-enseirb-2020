@@ -3,6 +3,9 @@ import pickle
 from copy import deepcopy
 from go_plot import plot_play_probabilities
 
+ADD_SWAP = False
+SWAP_VALUE = True
+SWAP_CURRENT = not SWAP_VALUE
 
 def coord_to_flat(coord):
     if coord == (-1, -1):
@@ -68,13 +71,25 @@ def flipud(probs):
     global FLIP_TABLE
     return do_op(probs, FLIP_TABLE)
 
+def swap_colors(s):
+    sample = deepcopy(s)
+    for k in range(7):
+        sample[0][2 * k], sample[0][2 * k + 1] = deepcopy(sample[0][2 * k + 1]), deepcopy(sample[0][2 * k])
+
+    if SWAP_CURRENT:
+        sample[0][14] = 1 - sample[0][14]
+
+    if SWAP_VALUE:
+        sample[2] = 1 - sample[2]
+    return sample
+
 
 def augmentate(samples):
     size = len(samples)
     samples = listify(samples)
     augmentated_samples = deepcopy(samples)
 
-    for _ in range(7):
+    for _ in range(15 if ADD_SWAP else 7):
         augmentated_samples += deepcopy(samples)
 
     for rot in range(1, 4):
@@ -89,6 +104,10 @@ def augmentate(samples):
                 augmentated_samples[mirror * size + idx][0][k] = np.flipud(augmentated_samples[(mirror - 4) * size + idx][0][k])
             augmentated_samples[mirror * size + idx][1] = flipud(augmentated_samples[(mirror - 4) * size + idx][1])
 
+    if ADD_SWAP:
+        for swap in range(8 * size):
+            augmentated_samples[swap + 8 * size] = swap_colors(augmentated_samples[swap])
+
     return tuplefy(augmentated_samples)
 
 f = open('./samples.npy', 'rb')
@@ -97,6 +116,6 @@ f.close()
 
 a = augmentate(samples)
 
-f = open('./samples_aug.npy', 'wb')
+f = open(f'./samples_aug{"" if ADD_SWAP else "_half"}.npy', 'wb')
 pickle.dump(a, f)
 f.close()
