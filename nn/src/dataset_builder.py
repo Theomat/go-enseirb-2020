@@ -6,6 +6,7 @@ import pickle
 import urllib.request
 import os
 import gzip
+import Goban
 
 
 def get_raw_data_go():
@@ -93,53 +94,52 @@ samples = []
 gnugo = GnuGo(9)
 tables = get_raw_data_go()
 
+
+board = Goban.Board()
+count = 0
 for idx, table in enumerate(tqdm(tables)):
 
     assert table['depth'] == len(table['list_of_moves'])
 
     vector = np.zeros((2 * history_size + 1, 9, 9), dtype=np.float64)
-    base = np.zeros((2, 9, 9), dtype=np.float64)
     next_to_play = 0
     skip = False
 
     for move in table['list_of_moves'][:-history_size]:
 
-        (col, lin) = name_to_coord(move)
-
-        if base[next_to_play, lin, col] != 0:  # We wont analyse games with captures for now
+        try:
+            board.push(Goban.Board.name_to_flat(move))
+        except Exception:
             skip = True
-
-        base[next_to_play, lin, col] = 1
+            count += 1
 
         next_to_play = (next_to_play + 1) % 2
 
     for idx, move in enumerate(table['list_of_moves'][-history_size:]):
 
-        (col, lin) = name_to_coord(move)
-
-        if base[next_to_play, lin, col] != 0:
+        try:
+            board.push(Goban.Board.name_to_flat(move))
+        except Exception:
             skip = True
-
-        base[next_to_play, lin, col] = 1
+            count += 1
 
         real_size = len(table['list_of_moves'][-history_size:])
         final_idx = 2 * (real_size - 1 - idx)
 
-        vector[final_idx + 1] = base[1]
-        vector[final_idx] = base[0]
-
-        next_to_play = (next_to_play + 1) % 2
+        vector[final_idx + 1] = (board._board == 2).reshape((9, 9)).astype(float)
+        vector[final_idx] = (board._board == 1).reshape((9, 9)).astype(float)
 
     vector[2 * history_size] = table['depth'] % 2
 
+    p, r = get_prob_reward(table, gnugo)
+
+    board = Goban.Board()
+    if p is None and r is None:
+        continue
+
     if not skip:
-        p, r = get_prob_reward(table, gnugo)
-
-        if p is None and r is None:
-            continue
-
         samples.append((vector, p, r))
 
-f = open('./samples.npy', 'wb')
+f = open('./new_samples.npy', 'wb')
 pickle.dump(samples, f)
 f.close()

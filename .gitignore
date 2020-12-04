@@ -134,7 +134,6 @@ dmypy.json
 .vscode/
 
 # Goban files (or should we commit it ?)
-*GnuGo.py
 *gnugoPlayer.py
 *localGame.py
 *myPlayer.py
@@ -146,3 +145,5 @@ dmypy.json
 
 # torch files
 *runs
+pro_data/
+*bz2
