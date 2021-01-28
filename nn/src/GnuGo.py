@@ -121,7 +121,7 @@ class GnuGo():
         self._stdout = self._proc.stdout
         self._size = size
         self._nextplayer = "black"
-        (ok, _) = self.query("level 10")
+        (ok, _) = self.query("level 0")
         assert ok=='OK'
         (ok, _) = self.query("boardsize "+str(size))
         assert ok=='OK'

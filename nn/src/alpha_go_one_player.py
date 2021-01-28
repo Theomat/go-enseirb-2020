@@ -20,7 +20,6 @@ class myPlayer(PlayerInterface):
         self._mycolor = None
 
         self.model = AlphaGoZero()
-        self.model.load_state_dict(torch.load("model_3.pt"))
 
         self.device = "cpu"
         self.model.eval()
@@ -94,6 +93,13 @@ class myPlayer(PlayerInterface):
         self._opponent = Goban.Board.flip(color)
         self.reset()
         self.root: Node = Node(self.get_state(), None)
+
+        if self._mycolor == Goban.Board._WHITE:
+            self.model.load_state_dict(torch.load("model_white.pt"))
+        else:
+            self.model.load_state_dict(torch.load("model_black.pt"))
+
+
         if self._mycolor == Goban.Board._WHITE:
             actions, states = self.explore_legal_moves()
             priors, value = self.evaluate(self.root.state[0])
@@ -194,6 +200,6 @@ class myPlayer(PlayerInterface):
 
     def endGame(self, winner):
         if self._mycolor == winner:
-            print("I won!!!")
+            print("AlphaGoOne wins!")
         else:
-            print("I lost :(!!")
+            print("AlphaGoOne loses !")

@@ -13,14 +13,14 @@ from uniform_replay_buffer import UniformReplayBuffer
 import random
 
 
-f = open('./samples_aug_half.npy', 'rb')
+f = open('./new_samples_aug_half.npy', 'rb')
 total_samples = pickle.load(f)
 f.close()
 
 
 TEST_SPLIT = 500
 FREQ_TEST = 10
-LR = 0.001
+LR = 0.01
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = AlphaGoZero(residual=9).float().to(device)
@@ -36,11 +36,11 @@ print('Training on' + device_name)
 print(len(Xtrain))
 print(len(Xtest))
 
-# model.load_state_dict(torch.load("win_as_white.pt"))
+# model.load_state_dict(torch.load("win_as_black.pt"))
 
 optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4)
 
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5000)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=300)
 writer = SummaryWriter()
 
 buffer = UniformReplayBuffer(len(Xtrain))
@@ -50,9 +50,9 @@ test_buffer = UniformReplayBuffer(len(Xtest))
 test_buffer.store(np.expand_dims(Xtest, axis=0))
 
 
-for epoch in tqdm(range(7000)):
+for epoch in tqdm(range(1000)):
 
-    inputs, pi, z = buffer.sample(128)
+    inputs, pi, z = buffer.sample(1024)
 
     inputs = inputs.float().to(device)
     pi = pi.float().to(device)
@@ -66,7 +66,7 @@ for epoch in tqdm(range(7000)):
     loss.backward()
 
     optimizer.step()
-    # scheduler.step()
+    scheduler.step()
 
     running_loss = loss.item()
 

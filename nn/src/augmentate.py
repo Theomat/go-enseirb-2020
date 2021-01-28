@@ -110,12 +110,12 @@ def augmentate(samples):
 
     return tuplefy(augmentated_samples)
 
-f = open('./samples.npy', 'rb')
+f = open('./new_samples.npy', 'rb')
 samples = pickle.load(f)
 f.close()
 
 a = augmentate(samples)
 
-f = open(f'./samples_aug{"" if ADD_SWAP else "_half"}.npy', 'wb')
+f = open(f'./new_samples_aug{"" if ADD_SWAP else "_half"}.npy', 'wb')
 pickle.dump(a, f)
 f.close()
