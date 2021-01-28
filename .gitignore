@@ -134,11 +134,7 @@ dmypy.json
 .vscode/
 
 # Goban files (or should we commit it ?)
-*gnugoPlayer.py
-*localGame.py
 *myPlayer.py
-*namedGame.py
-*playerInterface.py
 *randomPlayer.py
 *starter-go.py
 *visualGame.ipynb
