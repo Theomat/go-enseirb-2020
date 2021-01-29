@@ -14,9 +14,9 @@ Reimplementation of AlphaGoZero [1].
 
 
 ## Files and Ideas
- - Firstly, we are inspired by alpha go zero, but because self-play time is VERY HIGH (at least some months on oridnary hardware) we start the network with some knowledge.
+ - Firstly, we are inspired by alpha go zero, but because self-play time is VERY HIGH (at least some months on ordinary hardware) we start the network with some knowledge.
  
- - We train the network on the standard json9x9 file handed out by the teacher. We do some data augmentation on this data set and do a first training on this dataset. That's why we call our network AlphaGoOne. We do not include the final .npy file with the dataset because it's too large, but it can be generated using the files `dataset_builder.py` and `augmentate.py`. Our dataset builder uses the GnuGo board evaluation feature (scores) to evaluate the boards. The augmentate script allows to configure which kind of data augmentation should be used.
+ - We train the network on the standard json 9x9 file handed out by the teacher. We do some data augmentation on this data set and do a first training on this dataset. That's why we call our network AlphaGoOne. We do not include the final .npy file with the dataset because it's too large, but it can be generated using the files `dataset_builder.py` and `augmentate.py`. Our dataset builder uses the GnuGo board evaluation feature (scores) to evaluate the boards. The augmentate script allows to configure which kind of data augmentation should be used.
 
  - The neural network model follows the AlphaGoZero ideas: We have a two-head policy/value network with Residual Blocks. The `model.py` file contains all implementation details. The loss function is a bit tricky to code, therefore, the code is separated in the `loss.py` file with a small test funcion.
 
