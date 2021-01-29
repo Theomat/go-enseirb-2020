@@ -2,6 +2,16 @@
 
 Reimplementation of AlphaGoZero [1].
 
+
+## Files
+
+This branch is used for a variant of the AlphaGo Zero.
+The network used only output the probabilities of the moves.
+And then we build MCTS on top of those probabilitites but without any rollouts.
+
+The file ```mcts_nn_player.py``` along with the ```model.pt``` can be used to have a working player.
+We believe it's quite good but not up to par with the full algorithm.
+
 ---
 
 ## Bibliography
